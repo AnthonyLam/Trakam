@@ -44,9 +44,11 @@ def move_up(state: int):
 
 
 sensor.reset()                      # Reset and initialize the sensor.
-sensor.set_pixformat(sensor.RGB565) # Set pixel format to RGB565 (or GRAYSCALE)
+sensor.set_pixformat(sensor.GRAYSCALE) # Set pixel format to RGB565 (or GRAYSCALE)
 sensor.set_framesize(sensor.QVGA)   # Set frame size to VGA (640x480)
 sensor.skip_frames(time = 2000)     # Wait for settings take effect.
+
+face_detect = image.HaarCascade("frontalface", stages=25)
 
 # Initialize UART
 uart = pyb.UART(3)
@@ -56,7 +58,8 @@ TOP_CHAN = 0
 BOT_CHAN = 1
 
 # blob thresholds
-THRESHOLDS = [(50, 69, -5, 127, 23, 127)]
+#THRESHOLDS = [(50, 69, -5, 127, 23, 127)]
+THRESHOLDS = [(0, 100, -17, 64, 40, 94), (31, 57, -24, -3, 24, 54)]
 CENTER_THRESH = 20
 CENTER_X = 160
 CENTER_Y = 120
@@ -76,9 +79,10 @@ while(True):
     #for feature in img.find_features(face, threshold=0.4):
         #img.draw_rectangle(feature)
 
-    for blob in img.find_blobs(THRESHOLDS, pixels_threshold=200):
-        img.draw_rectangle(blob.rect())
-        x,y,w,h = blob.rect()
+    # correlate threshold with light sensor
+    for blob in img.find_features(face_detect, threshold=0):
+        img.draw_rectangle(blob)
+        x,y,w,h = blob
         center_x = x+(w/2)
         center_y = y+(h/2)
 
