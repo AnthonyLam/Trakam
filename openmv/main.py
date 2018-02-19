@@ -73,14 +73,37 @@ BOT_STATE = 1500
 send_servo_command(TOP_CHAN, TOP_STATE)
 send_servo_command(BOT_CHAN, BOT_STATE)
 
+
+# Facial Detection
+desc = None
+while(desc is None):
+    img = sensor.snapshot()
+    blob = img.find_features(face_detect)
+    if not blob:
+        continue
+    roi = (blob[0][0] - 31, blob[0][1] - 31, blob[0][2]+62, blob[0][3]+62)
+    desc = img.find_keypoints(roi=roi, theshold=10, scale_factor=1.1)
+
+
+print("Face found, starting tracking")
+sensor.skip_frames(time=2000)
+
+
 while(True):
     img = sensor.snapshot()         # Take a picture and return the image.
+    # Draw center box
+    img.draw_rectangle((CENTER_X-CENTER_THRESH,CENTER_Y-CENTER_THRESH,2*CENTER_THRESH,2*CENTER_THRESH))
 
-    #for feature in img.find_features(face, threshold=0.4):
-        #img.draw_rectangle(feature)
+    for blob in img.find_features(face_detect):
+        img.draw_rectangle(blob, color=0)
+        roi = (blob[0] - 31, blob[1] - 31, blob[2]+62, blob[3]+62)
+        kpts = img.find_keypoints(threshold=10, scale_factor=1.1, normalized=True, roi=roi)
+        count = image.match_descriptor(desc, kpts).count() if kpts else 0
 
-    # correlate threshold with light sensor
-    for blob in img.find_features(face_detect, threshold=0):
+        print(count)
+
+        # if count >= 1:
+            # continue
         img.draw_rectangle(blob)
         x,y,w,h = blob
         center_x = x+(w/2)
@@ -96,7 +119,5 @@ while(True):
         elif center_y < (CENTER_Y - CENTER_THRESH):
             TOP_STATE = move_down(TOP_STATE)
 
-    # Draw center box
-    img.draw_rectangle((CENTER_X-CENTER_THRESH,CENTER_Y-CENTER_THRESH,2*CENTER_THRESH,2*CENTER_THRESH))
 
 
