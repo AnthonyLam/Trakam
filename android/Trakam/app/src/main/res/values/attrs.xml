@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="primary_text_color" format="color|reference" />
+    <attr name="secondary_text_color" format="color|reference" />
+    <attr name="list_item_selector" format="reference" />
+    <attr name="ripple_mask_color" format="color|reference" />
+</resources>

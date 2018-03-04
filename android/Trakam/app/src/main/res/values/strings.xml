@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Trakam</string>
+    <string name="whitelist">Whitelist</string>
+    <string name="blacklist">Blacklist</string>
+</resources>

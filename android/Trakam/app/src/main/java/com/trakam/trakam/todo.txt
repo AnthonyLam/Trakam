@@ -1,0 +1,2 @@
+1. Add person to whitelist/blacklist
+2. Learn face from photo
