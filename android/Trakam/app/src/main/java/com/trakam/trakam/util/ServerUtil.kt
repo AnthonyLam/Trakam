@@ -34,7 +34,7 @@ object ServerUtil {
                 }
             }
         } catch (e: IOException) {
-            e.printStackTrace()
+            MyLogger.logError(this::class, "call failed: ${e.message}")
         }
         return null
     }

@@ -1,7 +1,14 @@
 package com.trakam.trakam.fragments.recentactivity
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Bundle
+import android.provider.MediaStore
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
+import android.support.v4.content.FileProvider
 import android.support.v7.widget.DividerItemDecoration
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -12,14 +19,19 @@ import com.trakam.trakam.data.Log
 import com.trakam.trakam.fragments.base.BaseFragment
 import com.trakam.trakam.services.OnLogEventListener
 import com.trakam.trakam.services.ServerPollingService
+import com.trakam.trakam.util.MyLogger
 import com.trakam.trakam.util.inflateLayout
+import com.trakam.trakam.util.showToast
+import java.io.File
+import java.io.IOException
 import java.text.DateFormat
 
 class RecentActivityFragment : BaseFragment(), OnLogEventListener {
     companion object {
-
         val TAG = RecentActivityFragment::class.qualifiedName
-
+        private const val REQ_CAMERA = 1
+        private const val TEMP_FILE_NAME = "pic.jpg"
+        private const val PICS_DIR = "pics"
     }
 
     private lateinit var mRecyclerViewAdapter: MyRecyclerViewAdapter
@@ -57,6 +69,10 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_add_person -> {
+                startCamera()
+                true
+            }
             R.id.action_whitelist -> {
                 true
             }
@@ -64,6 +80,45 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
                 true
             }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun startCamera() {
+        val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        if (cameraIntent.resolveActivity(activity!!.packageManager) != null) {
+            val picsDir = File(activity!!.filesDir, PICS_DIR)
+            if (!picsDir.exists()) {
+                if (!picsDir.mkdir()) {
+                    MyLogger.logError(this::class, "Failed to create pics dir")
+                    return
+                }
+            }
+
+            try {
+                val file = File(picsDir, TEMP_FILE_NAME)
+                val uri = FileProvider.getUriForFile(activity!!,
+                        "${activity!!.packageName}.fileprovider", file)
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
+                cameraIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                startActivityForResult(cameraIntent, REQ_CAMERA)
+            } catch (e: IOException) {
+                MyLogger.logError(this::class, "Failed to create tmp file: ${e.message}")
+            }
+        } else {
+            activity!!.showToast("Camera app not found")
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        when (requestCode) {
+            REQ_CAMERA -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    val file = File(File(activity!!.filesDir, PICS_DIR), TEMP_FILE_NAME)
+                    if (file.exists() && file.length() > 0) {
+                        
+                    }
+                }
+            }
         }
     }
 

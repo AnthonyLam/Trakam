@@ -38,7 +38,7 @@ class ServerPollingService : BaseService() {
 
     override fun onCreate() {
         super.onCreate()
-        mThread = thread {
+        mThread = thread(start = false) {
             continuouslyPoll()
         }
     }
