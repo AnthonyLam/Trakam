@@ -8,7 +8,7 @@ import com.trakam.trakam.fragments.recentactivity.RecentActivityFragment
 import com.trakam.trakam.services.ServerPollingService
 import com.trakam.trakam.util.replace
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

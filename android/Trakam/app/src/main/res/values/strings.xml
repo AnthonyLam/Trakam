@@ -3,4 +3,6 @@
     <string name="whitelist">Whitelist</string>
     <string name="blacklist">Blacklist</string>
     <string name="add_person">Add Person</string>
+    <string name="name">Name</string>
+    <string name="sending_photo">Sending photo...</string>
 </resources>

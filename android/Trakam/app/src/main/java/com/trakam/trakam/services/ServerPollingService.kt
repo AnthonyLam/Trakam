@@ -58,6 +58,7 @@ class ServerPollingService : BaseService() {
 
             val res = ServerUtil.newCall(URL)
             if (res != null) {
+                MyLogger.logInfo(this::class, "Polled server")
                 logs.clear()
 
                 for (line in res) {
