@@ -27,7 +27,7 @@ sensor.skip_frames(time = 2000)     # Wait for settings take effect.
 # pi.init(115200, bits=8, parity=0, stop=1, timeout_char=2000)
 
 pi = SPI(2)
-pi.init(2, SPI.SLAVE, polarity=0, phase=0, bits=8)
+pi.init(SPI.SLAVE, polarity=0, phase=0)
 
 front_face = image.HaarCascade("frontalface", stages=25)
 print(front_face)
@@ -45,6 +45,7 @@ Y_MAG = 60
 
 c = pyb.millis()
 saved = []
+print(pyb.freq())
 
 while(True):
     img = sensor.snapshot()         # Take a picture and return the image.
@@ -58,12 +59,25 @@ while(True):
     if invalidated:
         c = pyb.millis()
 
-    if pi.recv(1, timeout=5) == 55:
-        print("Request Received")
-        cimg = img.compress()
-        valid = 11 if invalidated and blobs else 00
-        print("Sending image. Detect: {}".format(valid))
-        pi.send(valid)
-        pi.send(pack('>i', cimg.size()))
-        pi.send(cimg)
+    # Wait for master to trigger request
+    try:
+        if pi.send_recv(55, timeout=5)[0] == 55:
+            print("Request Received")
+            cimg = img.compress()
+            valid = 11 if invalidated and blobs else 0
+            print("Sending image. Detect: {} Size: {}".format(valid, cimg.size()))
+            pi.send_recv(11)  # Send whether this frame has a face
+
+            # Sending first chunk
+            print("Chunk: 2048")
+            pi.send_recv(pack('>i', 2048))  # Send image jpg size
+            pi.send_recv(bytes(cimg[:2048]))  # Send image
+
+            # Sending second chunk
+            print("Chunk: ", cimg.size()-2048)
+            pi.send_recv(pack('>i', cimg.size() - 2048))  # Send image jpg size
+            pi.send_recv(bytes(cimg[2048:]))  # Send image
+
+    except OSError:
+        print("Timed out sending")
     saved = list(blobs)
