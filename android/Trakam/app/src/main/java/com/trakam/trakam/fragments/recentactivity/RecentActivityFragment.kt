@@ -3,11 +3,8 @@ package com.trakam.trakam.fragments.recentactivity
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Bitmap
 import android.os.Bundle
 import android.provider.MediaStore
-import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
 import android.support.v4.content.FileProvider
 import android.support.v7.widget.DividerItemDecoration
 import android.support.v7.widget.LinearLayoutManager
@@ -115,7 +112,7 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
                 if (resultCode == Activity.RESULT_OK) {
                     val file = File(File(activity!!.filesDir, PICS_DIR), TEMP_FILE_NAME)
                     if (file.exists() && file.length() > 0) {
-                        
+
                     }
                 }
             }
