@@ -13,7 +13,7 @@ def detect(file):
         
     detectOut = CF.face.detect(file, attributes='age')
     pp.pprint(detectOut)
-    output = []
+    ret = []
     
     if(len(detectOut) > 0):
         output = (list(map(lambda x: x['faceId'], detectOut)))
@@ -24,8 +24,9 @@ def detect(file):
         for x in identifyOut:
             for candidate in x['candidates']:
                 name = CF.person.get('people', candidate['personId'])['name']
-                output.append("{},{},{}".format(str(uuid.uuid4()), name, int(time.time() * 1000)))
-    return output
+                print(name)
+                ret.append("{},{},{}".format(str(uuid.uuid4()), name, int(time.time() * 1000)))
+    return ret
     
 if __name__ == "__main__":
     if len(sys.argv) < 2:
