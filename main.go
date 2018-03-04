@@ -12,10 +12,12 @@ import (
 
 func main() {
 	logDir := "./logs"
+	imgDir := "./img"
 	http.HandleFunc("/logs", func(w http.ResponseWriter, r *http.Request) {
 		f := readAndBufferFiles(logDir)
 		w.Write(f.Bytes())
 	})
+	http.Handle("/img", http.FileServer(http.Dir(imgDir)))
 	http.ListenAndServe(":8080", nil)
 }
 
