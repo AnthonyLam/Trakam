@@ -25,7 +25,6 @@ import com.trakam.trakam.services.ServerPollingService
 import com.trakam.trakam.util.MyLogger
 import com.trakam.trakam.util.inflateLayout
 import com.trakam.trakam.util.showToast
-import kotlinx.android.synthetic.main.frag_recent_activity.*
 import java.io.File
 import java.io.IOException
 import java.text.DateFormat
