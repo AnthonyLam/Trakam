@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_add_person"
+        android:icon="@drawable/ic_person_add_white_24dp"
+        android:title="@string/add_person"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_whitelist"
+        android:title="@string/whitelist"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_blacklist"
+        android:title="@string/blacklist"
+        app:showAsAction="never" />
+
+</menu>
