@@ -3,13 +3,19 @@ package com.trakam.trakam.fragments.recentactivity
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.provider.MediaStore
+import android.renderscript.Allocation
+import android.renderscript.RenderScript
+import android.renderscript.ScriptIntrinsicColorMatrix
 import android.support.v4.content.FileProvider
 import android.support.v7.widget.DividerItemDecoration
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.*
+import android.widget.ImageView
 import android.widget.TextView
 import com.trakam.trakam.R
 import com.trakam.trakam.data.Log
@@ -19,6 +25,7 @@ import com.trakam.trakam.services.ServerPollingService
 import com.trakam.trakam.util.MyLogger
 import com.trakam.trakam.util.inflateLayout
 import com.trakam.trakam.util.showToast
+import kotlinx.android.synthetic.main.frag_recent_activity.*
 import java.io.File
 import java.io.IOException
 import java.text.DateFormat
@@ -34,6 +41,7 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
     private lateinit var mRecyclerViewAdapter: MyRecyclerViewAdapter
     private lateinit var mRecyclerView: RecyclerView
     private lateinit var mLinearLayoutManager: LinearLayoutManager
+    private lateinit var mImageView: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +56,8 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        mImageView = view.findViewById(R.id.imageView)
 
         mLinearLayoutManager = LinearLayoutManager(view.context)
 
@@ -93,6 +103,13 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
 
             try {
                 val file = File(picsDir, TEMP_FILE_NAME)
+                if (file.exists()) {
+                    if (!file.delete()) {
+                        MyLogger.logError(this::class, "Failed to delete existing tmp pic")
+                        return
+                    }
+                }
+
                 val uri = FileProvider.getUriForFile(activity!!,
                         "${activity!!.packageName}.fileprovider", file)
                 cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
@@ -112,11 +129,34 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
                 if (resultCode == Activity.RESULT_OK) {
                     val file = File(File(activity!!.filesDir, PICS_DIR), TEMP_FILE_NAME)
                     if (file.exists() && file.length() > 0) {
-
+                        onPictureTaken(file)
                     }
                 }
             }
         }
+    }
+
+    private fun onPictureTaken(file: File) {
+        val input = BitmapFactory.decodeFile(file.absolutePath)
+        convertBitmapToGrayScale(input)
+    }
+
+    private fun convertBitmapToGrayScale(input: Bitmap): Bitmap {
+        val bitmapOutput = Bitmap.createBitmap(input)
+
+        val rs = RenderScript.create(activity!!)
+        val script = ScriptIntrinsicColorMatrix.create(rs)
+        script.setGreyscale()
+
+        val allocationInput = Allocation.createFromBitmap(rs, input)
+        val allocationOutput = Allocation.createFromBitmap(rs, bitmapOutput)
+
+        script.forEach(allocationInput, allocationOutput)
+
+        allocationOutput.copyTo(bitmapOutput)
+        mImageView.setImageBitmap(bitmapOutput)
+
+        return bitmapOutput
     }
 
     override fun onDestroy() {
