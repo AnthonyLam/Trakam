@@ -1,5 +1,6 @@
 package com.trakam.trakam.util
 
+import android.graphics.Bitmap
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -38,5 +39,4 @@ object ServerUtil {
         }
         return null
     }
-
 }
