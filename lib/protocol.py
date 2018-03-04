@@ -3,7 +3,7 @@ import TestPhoto
 import time
 
 wiringpi.wiringPiSetup()
-serial = wiringpi.serialOpen("/dev/ttyAMA0", 9600)
+serial = wiringpi.serialOpen("/dev/ttyAMA0", 115200)
 
 while(True):
     wiringpi.serialPutchar(serial, 55)
