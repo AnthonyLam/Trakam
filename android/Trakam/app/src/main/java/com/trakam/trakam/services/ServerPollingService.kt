@@ -18,7 +18,7 @@ class ServerPollingService : BaseService() {
     companion object {
         // poll every 10 seconds
         private const val POLL_INTERVAL = 5 * 1000L
-        private const val URL = "http://192.168.0.151:8080/logs"
+        private val URL = ServerUtil.BASE_URL.format("logs")
     }
 
     @Volatile
@@ -104,6 +104,10 @@ class ServerPollingService : BaseService() {
                     mLogs.clear()
                     mLogs += logs
                 }
+            } else {
+                mHandler.post {
+                    mOnLogEventListener?.onServerError()
+                }
             }
             try {
                 Thread.sleep(POLL_INTERVAL)
@@ -148,4 +152,7 @@ interface OnLogEventListener {
 
     @UiThread
     fun onLogsEvent(logs: List<Log>)
+
+    @UiThread
+    fun onServerError()
 }

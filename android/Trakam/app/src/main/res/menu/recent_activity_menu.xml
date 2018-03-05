@@ -13,9 +13,4 @@
         android:title="@string/whitelist"
         app:showAsAction="never" />
 
-    <item
-        android:id="@+id/action_blacklist"
-        android:title="@string/blacklist"
-        app:showAsAction="never" />
-
 </menu>
