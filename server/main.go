@@ -12,19 +12,19 @@ import (
 
 func main() {
 	logDir := "./logs"
-	imgDir := "./img"
+	imgDir, _ := filepath.Abs("./img/")
+	fmt.Println(imgDir)
 	http.HandleFunc("/logs", func(w http.ResponseWriter, r *http.Request) {
 		f := readAndBufferFiles(logDir)
 		w.Write(f.Bytes())
 	})
-	http.Handle("/img", http.FileServer(http.Dir(imgDir)))
+	http.Handle("/", http.FileServer(http.Dir(imgDir)))
 	http.ListenAndServe(":8080", nil)
 }
 
 func readAndBufferFiles(logDir string) *bytes.Buffer {
 	buf := new(bytes.Buffer)
 	filepath.Walk(logDir, func(p string, info os.FileInfo, err error) error {
-		fmt.Println(p)
 		if path.Ext(p) == ".log" {
 			b, err := ioutil.ReadFile(p)
 			if err == nil {
