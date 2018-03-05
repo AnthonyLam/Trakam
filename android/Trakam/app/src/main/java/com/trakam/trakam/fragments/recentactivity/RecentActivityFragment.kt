@@ -2,30 +2,32 @@ package com.trakam.trakam.fragments.recentactivity
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.MediaStore
 import android.support.v4.content.FileProvider
-import android.support.v7.widget.DividerItemDecoration
+import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.*
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.net.toUri
+import com.squareup.picasso.Picasso
 import com.trakam.trakam.R
 import com.trakam.trakam.activities.ImagePreviewActivity
 import com.trakam.trakam.data.Log
 import com.trakam.trakam.fragments.base.BaseFragment
 import com.trakam.trakam.services.OnLogEventListener
 import com.trakam.trakam.services.ServerPollingService
-import com.trakam.trakam.util.MyLogger
-import com.trakam.trakam.util.inflateLayout
-import com.trakam.trakam.util.showToast
+import com.trakam.trakam.util.*
 import java.io.File
 import java.io.IOException
 import java.text.DateFormat
 
 class RecentActivityFragment : BaseFragment(), OnLogEventListener {
+
     companion object {
         val TAG = RecentActivityFragment::class.qualifiedName
         private const val REQ_CAMERA = 1
@@ -36,11 +38,12 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
     private lateinit var mRecyclerViewAdapter: MyRecyclerViewAdapter
     private lateinit var mRecyclerView: RecyclerView
     private lateinit var mLinearLayoutManager: LinearLayoutManager
+    private lateinit var mNoActivityMessage: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
-        mRecyclerViewAdapter = MyRecyclerViewAdapter()
+        mRecyclerViewAdapter = MyRecyclerViewAdapter(activity!!)
     }
 
     override fun onCreateView(inflater: LayoutInflater,
@@ -50,14 +53,15 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        mLinearLayoutManager = LinearLayoutManager(view.context)
+        mNoActivityMessage = view.findViewById(R.id.noActivityMessage)
 
         mRecyclerView = view.findViewById(R.id.recyclerView)
+        mLinearLayoutManager = LinearLayoutManager(view.context)
         mRecyclerView.layoutManager = mLinearLayoutManager
         mRecyclerView.itemAnimator = null
-        mRecyclerView.addItemDecoration(DividerItemDecoration(view.context,
-                DividerItemDecoration.VERTICAL))
+        mRecyclerView.addItemDecoration(ListDividerItemDecoration(activity!!,
+                ListDividerItemDecoration.VERTICAL_LIST,
+                activity!!.dipToPix(16.0f + 40.0f + 16.0f).toInt()))
         mRecyclerView.adapter = mRecyclerViewAdapter
     }
 
@@ -72,12 +76,9 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
                 startCamera()
                 true
             }
-            R.id.action_whitelist -> {
-                true
-            }
-            R.id.action_blacklist -> {
-                true
-            }
+//            R.id.action_whitelist -> {
+//                true
+//            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -142,22 +143,45 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
     override fun onServerPollingServiceBound(serverPollingService: ServerPollingService) {
         serverPollingService.pause()
 
-        mRecyclerViewAdapter.setItems(serverPollingService.getLogs().map { ListItem(it) })
+        updateList(serverPollingService.getLogs())
         serverPollingService.setOnLogEventListener(this)
 
         serverPollingService.resume()
     }
 
-    override fun onLogsEvent(logs: List<Log>) {
+    private fun updateList(logs: List<Log>) {
         mRecyclerViewAdapter.setItems(logs.map { ListItem(it) })
+        if (mRecyclerViewAdapter.itemCount > 0) {
+            mNoActivityMessage.visibility = View.GONE
+        }
+    }
+
+    override fun onLogsEvent(logs: List<Log>) {
+        updateList(logs)
+        if ((activity as AppCompatActivity).supportActionBar?.subtitle != null) {
+            (activity as AppCompatActivity).supportActionBar?.subtitle = null
+        }
+    }
+
+    override fun onServerError() {
+        (activity as AppCompatActivity).supportActionBar?.subtitle = getString(R.string.server_error)
     }
 }
 
 internal class ListItem(val log: Log) {
 }
 
-private class MyRecyclerViewAdapter : RecyclerView.Adapter<MyRecyclerViewAdapter.MyViewHolder>() {
+private class MyRecyclerViewAdapter(private val context: Context) :
+        RecyclerView.Adapter<MyRecyclerViewAdapter.MyViewHolder>() {
+
+    companion object {
+        private val URL = ServerUtil.BASE_URL.format("%s.jpg")
+    }
+
     private val mData = mutableListOf<ListItem>()
+    private val mTransformation: BitmapTransformation = BitmapTransformation.Builder(context)
+            .setBorderEnabled(false)
+            .build()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -194,9 +218,21 @@ private class MyRecyclerViewAdapter : RecyclerView.Adapter<MyRecyclerViewAdapter
             holder.name.text = listItem.log.firstName
         }
         holder.timeStamp.text = DateFormat.getDateTimeInstance().format(listItem.log.timestamp)
+
+        Picasso.with(context)
+                .cancelRequest(holder.pic)
+
+        Picasso.with(context)
+                .load(URL.format(listItem.log.uuid))
+                .transform(mTransformation)
+                .fit()
+                .centerCrop()
+                .placeholder(R.drawable.ic_account_circle_grey_700_48dp)
+                .into(holder.pic)
     }
 
     private class MyViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val pic: ImageView = itemView.findViewById(R.id.imageView)
         val name: TextView = itemView.findViewById(R.id.name)
         val timeStamp: TextView = itemView.findViewById(R.id.timeStamp)
     }
