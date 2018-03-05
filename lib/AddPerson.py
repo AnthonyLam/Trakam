@@ -8,6 +8,8 @@ if len(sys.argv) < 3:
 	sys.exit();
 
 KEY = '90823e5520ad43b3b8e828ba6b1a7a3e'
+OFFSET = 25
+
 CF.Key.set(KEY)
 
 file = sys.argv[1]
@@ -26,6 +28,6 @@ print(output)
 if(len(output) > 0):
     img = Image.open(file)
     rect = output[0]['faceRectangle']
-    box=(rect['left'], rect['top'],  rect['left']+rect['width'], rect['top']+rect['height'])
+    box=(rect['left']-OFFSET, rect['top']-OFFSET,  rect['left']+rect['width']+OFFSET, rect['top']+rect['height']+OFFSET)
     img2 = img.crop(box)
     img2.save("img/{}.jpg".format(name.replace(" ", "_")))
