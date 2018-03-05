@@ -10,6 +10,10 @@ import com.trakam.trakam.data.Log
 import com.trakam.trakam.util.MyLogger
 import com.trakam.trakam.util.ServerUtil
 import com.trakam.trakam.util.StringSplitter
+import okhttp3.HttpUrl
+import okhttp3.Request
+import okhttp3.Response
+import java.io.BufferedReader
 import java.util.*
 import kotlin.concurrent.thread
 
@@ -18,7 +22,7 @@ class ServerPollingService : BaseService() {
     companion object {
         // poll every 10 seconds
         private const val POLL_INTERVAL = 5 * 1000L
-        private const val URL = "http://192.168.0.151:8080/logs"
+        private val URL = ServerUtil.BASE_URL.format("logs")
     }
 
     @Volatile
@@ -28,7 +32,7 @@ class ServerPollingService : BaseService() {
     private val mLogsLock = Any()
     private val mLogs = mutableListOf<Log>()
     private val mBinder = LocalBinder()
-    private lateinit var mThread: Thread
+    private var mThread: Thread? = null
     private val mHandler = Handler(Looper.getMainLooper())
 
     private var mOnLogEventListener: OnLogEventListener? = null
@@ -36,14 +40,22 @@ class ServerPollingService : BaseService() {
     @Volatile
     private var mRunning = true
 
+    private lateinit var mRequest: Request
+
     override fun onCreate() {
         super.onCreate()
-        mThread = thread {
-            continuouslyPoll()
-        }
+        val url = HttpUrl.parse(URL) ?: throw RuntimeException("Failed to parse url")
+        mRequest = Request.Builder()
+                .url(url)
+                .build()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (mThread == null) {
+            mThread = thread {
+                continuouslyPoll()
+            }
+        }
         return START_STICKY
     }
 
@@ -56,12 +68,14 @@ class ServerPollingService : BaseService() {
                 mPauseCondition.close()
             }
 
-            val res = ServerUtil.newCall(URL)
-            if (res != null) {
+            val res = ServerUtil.makeRequest(mRequest) {
+                handleResponse(it)
+            }
+            if (res.success && res.data != null) {
                 MyLogger.logInfo(this::class, "Polled server")
                 logs.clear()
 
-                for (line in res) {
+                for (line in res.data) {
                     val tokens = StringSplitter.split(line, ",")
                     if (tokens.size == 3) {
                         try {
@@ -104,11 +118,30 @@ class ServerPollingService : BaseService() {
                     mLogs.clear()
                     mLogs += logs
                 }
+            } else {
+                mHandler.post {
+                    mOnLogEventListener?.onServerError()
+                }
             }
             try {
                 Thread.sleep(POLL_INTERVAL)
             } catch (e: InterruptedException) {
             }
+        }
+    }
+
+    private fun handleResponse(response: Response): List<String>? {
+        val body = response.body() ?: return null
+
+        return try {
+            val reader = BufferedReader(body.charStream())
+            val list = mutableListOf<String>()
+            reader.forEachLine {
+                list += it
+            }
+            list
+        } catch (e: Exception) {
+            null
         }
     }
 
@@ -124,8 +157,9 @@ class ServerPollingService : BaseService() {
     override fun onDestroy() {
         super.onDestroy()
         mRunning = false
-        mThread.interrupt()
-        mThread.join()
+        mThread?.interrupt()
+        mThread?.join()
+        mThread = null
         mOnLogEventListener = null
     }
 
@@ -148,4 +182,7 @@ interface OnLogEventListener {
 
     @UiThread
     fun onLogsEvent(logs: List<Log>)
+
+    @UiThread
+    fun onServerError()
 }

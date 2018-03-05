@@ -18,10 +18,16 @@ import com.microsoft.projectoxford.face.FaceServiceClient
 import com.microsoft.projectoxford.face.FaceServiceRestClient
 import com.microsoft.projectoxford.face.rest.ClientException
 import com.trakam.trakam.R
+import com.trakam.trakam.util.ServerUtil
 import com.trakam.trakam.util.inflateLayout
 import com.trakam.trakam.util.showToast
+import okhttp3.FormBody
+import okhttp3.HttpUrl
+import okhttp3.MediaType
+import okhttp3.Request
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.IOException
 import java.lang.ref.WeakReference
 
@@ -144,11 +150,11 @@ class SendDialogFragment : DialogFragment() {
     class SendTask(frag: SendDialogFragment,
                    private val faceServiceClient: FaceServiceClient,
                    private val name: String,
-                   private val bitmap: Bitmap) : AsyncTask<Any, Any, Boolean>() {
+                   private val bitmap: Bitmap) : AsyncTask<Any, Any, Pair<Boolean, String>>() {
 
         private val mFragRef = WeakReference(frag)
 
-        override fun doInBackground(vararg params: Any): Boolean {
+        override fun doInBackground(vararg params: Any): Pair<Boolean, String> {
             try {
                 val result = faceServiceClient.createPerson(PERSON_GROUP_ID,
                         name, "")
@@ -162,27 +168,41 @@ class SendDialogFragment : DialogFragment() {
                         result.personId, inputStream,
                         "", null)
                 faceServiceClient.trainPersonGroup(PERSON_GROUP_ID)
-                return true
+                return Pair(true, "")
             } catch (e: ClientException) {
-                e.printStackTrace()
+                return Pair(false, e.message ?: "")
             } catch (e: IOException) {
-                e.printStackTrace()
+                return Pair(false, "")
             }
-            return false
         }
 
-        override fun onPostExecute(result: Boolean) {
+        fun sendJpeg(url: String, file: File): Boolean {
+            val parsedUrl = HttpUrl.parse(url) ?: throw RuntimeException("failed to parse url")
+            val reqBody = FormBody.create(MediaType.parse("image/jpeg"), file)
+            val req: Request = Request.Builder()
+                    .url(parsedUrl)
+                    .post(reqBody)
+                    .build()
+            return ServerUtil.makeRequest(req) {}.success
+        }
+
+        override fun onPostExecute(result: Pair<Boolean, String>) {
             val frag = mFragRef.get() ?: return
 
             if (frag.activity == null) {
                 return
             }
 
-            if (result) {
+            val (success, errMsg) = result
+            if (success) {
                 frag.activity!!.showToast("Sent!")
                 frag.activity!!.finish()
             } else {
-                frag.activity!!.showToast("Send failed!")
+                if (errMsg.isNotEmpty()) {
+                    frag.activity!!.showToast(errMsg)
+                } else {
+                    frag.activity!!.showToast("Send failed!")
+                }
             }
             frag.dismiss()
         }

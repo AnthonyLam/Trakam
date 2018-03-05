@@ -6,14 +6,11 @@ mkdir img
 
 # Build and run go server
 printf "Running go server\n"
-cd server
-go build
-cd ..
-./server/server &
+./server/server &> ./go.log
 echo $!
 
 # Run python stuff
 printf "Running python program\n"
 source lib/venv/bin/activate
-python3 lib/protocol.py &
+python3 lib/protocol.py &> ./python.log
 echo $1
