@@ -19,6 +19,18 @@ func main() {
 		w.Write(f.Bytes())
 	})
 	http.Handle("/", http.FileServer(http.Dir(imgDir)))
+
+	http.HandleFunc("/train", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && r.Header["Content-Type"][0] == "image/jpeg" {
+			if body, err := r.GetBody; err == nil {
+				ioutil.WriteFile()
+			} else {
+				w.WriteHeader(http.StatusBadRequest)
+			}
+		} else {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	})
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -38,3 +50,5 @@ func readAndBufferFiles(logDir string) *bytes.Buffer {
 	})
 	return buf
 }
+
+func train()
