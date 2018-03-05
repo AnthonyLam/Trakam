@@ -18,7 +18,12 @@ def detect(file):
     if(len(detectOut) > 0):
         output = (list(map(lambda x: x['faceId'], detectOut)))
         
-        identifyOut = CF.face.identify(output, 'people')
+        try:
+            identifyOut = CF.face.identify(output, 'people')
+        except Exception as e:
+            print("No faces trained")
+            return []
+
         pp.pprint(identifyOut)
         
         for x in identifyOut:
