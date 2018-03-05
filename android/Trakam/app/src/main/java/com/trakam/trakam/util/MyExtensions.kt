@@ -10,6 +10,7 @@ import android.os.Build
 import android.preference.PreferenceManager
 import android.support.annotation.IdRes
 import android.support.annotation.LayoutRes
+import android.util.TypedValue
 import android.view.*
 import android.widget.Toast
 
@@ -73,6 +74,10 @@ fun Context.getTypeface(name: String): Typeface? {
         typefaceCache[assetPath] = typeface
     }
     return typeface
+}
+
+fun Context.dipToPix(value: Float): Float {
+    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, resources.displayMetrics)
 }
 
 fun Context.getDefaultSharedPreferences(): SharedPreferences =

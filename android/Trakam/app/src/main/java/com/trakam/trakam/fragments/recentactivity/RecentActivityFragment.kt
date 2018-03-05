@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.support.v4.content.FileProvider
 import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.DividerItemDecoration
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.*
@@ -60,8 +59,9 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
         mLinearLayoutManager = LinearLayoutManager(view.context)
         mRecyclerView.layoutManager = mLinearLayoutManager
         mRecyclerView.itemAnimator = null
-        mRecyclerView.addItemDecoration(DividerItemDecoration(view.context,
-                DividerItemDecoration.VERTICAL))
+        mRecyclerView.addItemDecoration(ListDividerItemDecoration(activity!!,
+                ListDividerItemDecoration.VERTICAL_LIST,
+                activity!!.dipToPix(16.0f + 40.0f + 16.0f).toInt()))
         mRecyclerView.adapter = mRecyclerViewAdapter
     }
 
