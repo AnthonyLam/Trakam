@@ -36,9 +36,9 @@ ROT_SPEED = 15  # Make this speed a function of the distance to the object.
 LIMIT_MIN = 992
 LIMIT_MAX = 2000
 
-FACE_TIMEOUT = 100
-X_MAG = 60
-Y_MAG = 60
+FACE_TIMEOUT = 500
+X_MAG = 80
+Y_MAG = 80
 
 c = pyb.millis()
 saved = []
