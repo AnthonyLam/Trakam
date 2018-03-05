@@ -76,9 +76,9 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
                 startCamera()
                 true
             }
-            R.id.action_whitelist -> {
-                true
-            }
+//            R.id.action_whitelist -> {
+//                true
+//            }
             else -> super.onOptionsItemSelected(item)
         }
     }
