@@ -176,16 +176,6 @@ class SendDialogFragment : DialogFragment() {
             }
         }
 
-        fun sendJpeg(url: String, file: File): Boolean {
-            val parsedUrl = HttpUrl.parse(url) ?: throw RuntimeException("failed to parse url")
-            val reqBody = FormBody.create(MediaType.parse("image/jpeg"), file)
-            val req: Request = Request.Builder()
-                    .url(parsedUrl)
-                    .post(reqBody)
-                    .build()
-            return ServerUtil.makeRequest(req) {}.success
-        }
-
         override fun onPostExecute(result: Pair<Boolean, String>) {
             val frag = mFragRef.get() ?: return
 
