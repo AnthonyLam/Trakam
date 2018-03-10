@@ -59,10 +59,9 @@ while(True):
         print("Request Received")
         cimg = img.compress()
         valid = 11 if invalidated and blobs else 00
-        if valid:
-            print("Sending image. Detect: {}".format(valid))
+        print("Sending image. Detect: {}".format(valid))
 
-            pi.writechar(valid)
-            pi.write(pack('>i', cimg.size()))
-            pi.write(cimg)
+        pi.writechar(valid)
+        pi.write(pack('>i', cimg.size()))
+        pi.write(cimg)
     saved = list(blobs)

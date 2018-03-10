@@ -1,1 +1,7 @@
 /server/server
+go.log
+python.log
+lib/venv/
+lib/__pycache__/
+logs/
+*.jpg
