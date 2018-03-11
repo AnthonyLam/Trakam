@@ -1,8 +1,8 @@
 import cognitive_face as CF
+import os
 
-with open('../faceapi.key', 'r') as f:
-    KEY = str(f.readline()).strip()
-    print("The key: ", KEY)
+KEY = os.environ.get("KEY")
+print(KEY)
 if not KEY:
     print("No key found")
     sys.exit(-1)

@@ -3,14 +3,9 @@ import sys
 import pprint
 import uuid
 import time
+import SetupCF 
 
 pp = pprint.PrettyPrinter(indent=4)
-with open('faceapi.key', 'r') as f:
-    KEY = str(f.readline()).strip()
-    print("The key: ", KEY)
-if not KEY:
-    sys.exit(-1)
-CF.Key.set(KEY)
 
 def detect(file):
     print("file = {}\n".format(file))
