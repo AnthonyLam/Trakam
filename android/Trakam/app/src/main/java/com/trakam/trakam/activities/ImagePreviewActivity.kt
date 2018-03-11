@@ -18,16 +18,10 @@ import com.microsoft.projectoxford.face.FaceServiceClient
 import com.microsoft.projectoxford.face.FaceServiceRestClient
 import com.microsoft.projectoxford.face.rest.ClientException
 import com.trakam.trakam.R
-import com.trakam.trakam.util.ServerUtil
 import com.trakam.trakam.util.inflateLayout
 import com.trakam.trakam.util.showToast
-import okhttp3.FormBody
-import okhttp3.HttpUrl
-import okhttp3.MediaType
-import okhttp3.Request
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.io.IOException
 import java.lang.ref.WeakReference
 
@@ -115,7 +109,7 @@ class SendDialogFragment : DialogFragment() {
             return frag
         }
 
-        private const val SUB_KEY = "90823e5520ad43b3b8e828ba6b1a7a3e"
+        private const val SUB_KEY = "fb648f47875e4dba98ed1267aec784e7"
         private const val PERSON_GROUP_ID = "people"
     }
 

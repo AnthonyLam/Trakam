@@ -6,8 +6,6 @@ import okhttp3.Response
 import java.io.IOException
 
 object ServerUtil {
-    const val BASE_URL = "http://192.168.0.151:8080/%s"
-
     private val sOkHttpClient = OkHttpClient()
 
     fun <T> makeRequest(req: Request, responseHandler: ((Response) -> T)? = null): Result<T> {

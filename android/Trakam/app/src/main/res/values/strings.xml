@@ -7,4 +7,6 @@
     <string name="sending_photo">Sending photo...</string>
     <string name="no_activity">No Activity</string>
     <string name="server_error">Server Error</string>
+    <string name="settings_activity_label">Settings</string>
+    <string name="settings">Settings</string>
 </resources>

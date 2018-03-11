@@ -17,6 +17,7 @@ import androidx.net.toUri
 import com.squareup.picasso.Picasso
 import com.trakam.trakam.R
 import com.trakam.trakam.activities.ImagePreviewActivity
+import com.trakam.trakam.activities.SettingsActivity
 import com.trakam.trakam.data.Log
 import com.trakam.trakam.fragments.base.BaseFragment
 import com.trakam.trakam.services.OnLogEventListener
@@ -76,9 +77,10 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
                 startCamera()
                 true
             }
-//            R.id.action_whitelist -> {
-//                true
-//            }
+            R.id.action_settings -> {
+                startActivity(Intent(activity!!, SettingsActivity::class.java))
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }

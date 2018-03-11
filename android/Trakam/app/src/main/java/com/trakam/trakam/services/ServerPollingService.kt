@@ -1,15 +1,14 @@
 package com.trakam.trakam.services
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Binder
 import android.os.ConditionVariable
 import android.os.Handler
 import android.os.Looper
 import android.support.annotation.UiThread
 import com.trakam.trakam.data.Log
-import com.trakam.trakam.util.MyLogger
-import com.trakam.trakam.util.ServerUtil
-import com.trakam.trakam.util.StringSplitter
+import com.trakam.trakam.util.*
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
@@ -22,7 +21,6 @@ class ServerPollingService : BaseService() {
     companion object {
         // poll every 10 seconds
         private const val POLL_INTERVAL = 5 * 1000L
-        private val URL = ServerUtil.BASE_URL.format("logs")
     }
 
     @Volatile
@@ -40,14 +38,34 @@ class ServerPollingService : BaseService() {
     @Volatile
     private var mRunning = true
 
+    private val mRequestLock = Any()
     private lateinit var mRequest: Request
 
     override fun onCreate() {
         super.onCreate()
-        val url = HttpUrl.parse(URL) ?: throw RuntimeException("Failed to parse url")
-        mRequest = Request.Builder()
-                .url(url)
-                .build()
+        setupRequest()
+    }
+
+    private fun setupRequest() {
+        val host = getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_SERVER_HOST,
+                PrefKeys.Server.Default.SERVER_HOST)
+        val port = getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_SERVER_PORT,
+                PrefKeys.Server.Default.SERVER_PORT)
+        val url = HttpUrl.parse("http://$host:$port/logs")
+                ?: throw RuntimeException("Failed to parse url")
+        synchronized(mRequestLock) {
+            mRequest = Request.Builder()
+                    .url(url)
+                    .build()
+        }
+    }
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
+        when (key) {
+            PrefKeys.Server.KEY_SERVER_HOST, PrefKeys.Server.KEY_SERVER_PORT -> {
+                setupRequest()
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -68,7 +86,11 @@ class ServerPollingService : BaseService() {
                 mPauseCondition.close()
             }
 
-            val res = ServerUtil.makeRequest(mRequest) {
+            val req = synchronized(mRequestLock) {
+                mRequest
+            }
+
+            val res = ServerUtil.makeRequest(req) {
                 handleResponse(it)
             }
             if (res.success && res.data != null) {
