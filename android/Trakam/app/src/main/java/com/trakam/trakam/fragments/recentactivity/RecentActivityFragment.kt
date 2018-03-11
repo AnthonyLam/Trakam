@@ -15,8 +15,12 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.*
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.net.toUri
+import com.github.niqdev.mjpeg.DisplayMode
+import com.github.niqdev.mjpeg.Mjpeg
+import com.github.niqdev.mjpeg.MjpegSurfaceView
 import com.squareup.picasso.Picasso
 import com.trakam.trakam.R
 import com.trakam.trakam.activities.ImagePreviewActivity
@@ -37,27 +41,35 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
         private const val REQ_CAMERA = 1
         private const val TEMP_FILE_NAME = "pic.jpg"
         private const val PICS_DIR = "pics"
+        private const val STREAM_URL = "http://192.168.0.189:8090/?action=stream"
     }
 
     private lateinit var mRecyclerViewAdapter: MyRecyclerViewAdapter
     private lateinit var mRecyclerView: RecyclerView
     private lateinit var mLinearLayoutManager: LinearLayoutManager
     private lateinit var mNoActivityMessage: TextView
+    private lateinit var mProgressBar: ProgressBar
+    private lateinit var mLiveFeedError: TextView
+    private lateinit var mMjpegView: MjpegSurfaceView
+    private lateinit var mMjpeg: Mjpeg
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
         mRecyclerViewAdapter = MyRecyclerViewAdapter(activity!!, this)
+        mMjpeg = Mjpeg.newInstance()
     }
 
     override fun onCreateView(inflater: LayoutInflater,
                               container: ViewGroup?,
-                              savedInstanceState: Bundle?): View =
-            inflateLayout(R.layout.frag_recent_activity)
+                              savedInstanceState: Bundle?): View {
+        val view = inflateLayout(R.layout.frag_recent_activity)
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+        mMjpegView = view.findViewById(R.id.mjpegView)
+
         mNoActivityMessage = view.findViewById(R.id.noActivityMessage)
+        mLiveFeedError = view.findViewById(R.id.liveFeedError)
+        mProgressBar = view.findViewById(R.id.progressBar)
 
         mRecyclerView = view.findViewById(R.id.recyclerView)
         mLinearLayoutManager = LinearLayoutManager(view.context)
@@ -67,6 +79,25 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
                 ListDividerItemDecoration.VERTICAL_LIST,
                 activity!!.dipToPix(16.0f + 40.0f + 16.0f).toInt()))
         mRecyclerView.adapter = mRecyclerViewAdapter
+
+        mLiveFeedError.setOnClickListener {
+
+        }
+
+        return view
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mMjpeg.open(STREAM_URL)
+                .subscribe {
+                    mMjpegView.setSource(it)
+                    mMjpegView.setDisplayMode(DisplayMode.BEST_FIT)
+                }
+    }
+
+    override fun onPause() {
+        super.onPause()
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
