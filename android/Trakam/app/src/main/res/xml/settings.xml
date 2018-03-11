@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="Server">
+
+        <EditTextPreference
+            android:defaultValue="192.168.0.189"
+            android:dialogTitle="Host"
+            android:key="pref_key_server_host"
+            android:persistent="true"
+            android:title="Host" />
+
+        <EditTextPreference
+            android:defaultValue="8080"
+            android:dialogTitle="Port"
+            android:key="pref_key_server_port"
+            android:persistent="true"
+            android:title="Port" />
+    </PreferenceCategory>
+
+</PreferenceScreen>
