@@ -2,6 +2,7 @@ import wiringpi
 import TestPhoto
 import time
 import asyncio
+import logging
 from shutil import copyfile
 
 
@@ -13,7 +14,9 @@ IMG_DIR = "img"
 wiringpi.wiringPiSetup()
 serial = wiringpi.serialOpen("/dev/ttyAMA0", 921600)
 loop = asyncio.get_event_loop()
-print("Starting serial connection")
+log = logging.getLogger(__name__)
+
+log.debug("Starting serial connection")
 
 
 async def check_azure():
@@ -36,11 +39,11 @@ while(True):
      
     if(wiringpi.serialDataAvail(serial) > 0):
         code = wiringpi.serialGetchar(serial)
-        print("Recieved: ", code)
+        log.debug("Recieved: %d", code)
      
         size = list(get_chars(4))
         sizeI = sum(map(lambda x: max(x[0]*256, 1)*x[1], enumerate(size[::-1])))
-        print("Payload size:", sizeI)
+        log.debug("Payload size: %d", sizeI)
      
         with open(STREAM_FILE, "wb") as f, open(DETECT_FILE, "wb") as t:
             b = bytes(list(get_chars(sizeI)))
