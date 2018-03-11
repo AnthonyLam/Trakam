@@ -24,7 +24,7 @@
             android:layout_gravity="center"
             android:layout_marginEnd="16dp"
             android:indeterminate="true"
-            android:visibility="gone" />
+            android:visibility="visible" />
 
         <android.support.v7.widget.AppCompatTextView
             android:id="@+id/liveFeedError"
@@ -33,7 +33,7 @@
             android:layout_gravity="center"
             android:text="@string/live_feed_error"
             android:textAllCaps="true"
-            android:textColor="?attr/secondary_text_color"
+            android:textColor="#b2ffffff"
             android:textSize="28sp"
             android:visibility="gone" />
     </FrameLayout>

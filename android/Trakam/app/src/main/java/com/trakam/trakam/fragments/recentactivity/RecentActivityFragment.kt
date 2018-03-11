@@ -81,7 +81,10 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
         mRecyclerView.adapter = mRecyclerViewAdapter
 
         mLiveFeedError.setOnClickListener {
+            mProgressBar.visibility = View.VISIBLE
+            mLiveFeedError.visibility = View.GONE
 
+            startStreaming()
         }
 
         return view
@@ -89,15 +92,21 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
 
     override fun onResume() {
         super.onResume()
-        mMjpeg.open(STREAM_URL)
-                .subscribe {
-                    mMjpegView.setSource(it)
-                    mMjpegView.setDisplayMode(DisplayMode.BEST_FIT)
-                }
+        startStreaming()
     }
 
-    override fun onPause() {
-        super.onPause()
+    private fun startStreaming() {
+        mMjpeg.open(STREAM_URL)
+                .subscribe({
+                    mMjpegView.setSource(it)
+                    mMjpegView.setDisplayMode(DisplayMode.BEST_FIT)
+
+                    mLiveFeedError.visibility = View.GONE
+                    mProgressBar.visibility = View.GONE
+                }, {
+                    mLiveFeedError.visibility = View.VISIBLE
+                    mProgressBar.visibility = View.GONE
+                })
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
