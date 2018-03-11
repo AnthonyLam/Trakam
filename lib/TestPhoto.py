@@ -26,7 +26,10 @@ def detect(file):
             identifyOut = CF.face.identify(output, 'people')
         except Exception as e:
             print("No faces trained")
-            return []
+            for x in detectOut:
+                name = "unknown"
+                ret.append("{},{},{}".format(str(uuid.uuid4()), name, int(time.time() * 1000)))
+            return ret
 
         pp.pprint(identifyOut)
         
@@ -34,6 +37,9 @@ def detect(file):
             for candidate in x['candidates']:
                 name = CF.person.get('people', candidate['personId'])['name']
                 print(name)
+                ret.append("{},{},{}".format(str(uuid.uuid4()), name, int(time.time() * 1000)))
+            if len(x['candidates']) == 0:
+                name = "unknown"
                 ret.append("{},{},{}".format(str(uuid.uuid4()), name, int(time.time() * 1000)))
     return ret
     

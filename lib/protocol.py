@@ -16,10 +16,8 @@ wiringpi.wiringPiSetup()
 serial = wiringpi.serialOpen("/dev/ttyAMA0", 921600)
 loop = asyncio.get_event_loop()
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
-log.debug("Starting serial connection")
-
+print("Starting serial connection")
 
 async def check_azure():
     fileout = TestPhoto.detect(DETECT_FILE)
@@ -41,11 +39,11 @@ while(True):
      
     if(wiringpi.serialDataAvail(serial) > 0):
         code = wiringpi.serialGetchar(serial)
-        log.debug("Recieved: %d", code)
+        print("Recieved: %d", code)
      
         size = bytes(get_chars(4))
         sizeI = struct.unpack('>i', size)[0]
-        log.debug("Payload size: %d", sizeI)
+        print("Payload size: %d", sizeI)
      
         with open(STREAM_FILE, "wb") as f, open(DETECT_FILE, "wb") as t:
             b = bytes(list(get_chars(sizeI)))

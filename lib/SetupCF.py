@@ -1,4 +1,10 @@
 import cognitive_face as CF
 
-KEY = '90823e5520ad43b3b8e828ba6b1a7a3e'
+with open('../faceapi.key', 'r') as f:
+    KEY = str(f.readline()).strip()
+    print("The key: ", KEY)
+if not KEY:
+    print("No key found")
+    sys.exit(-1)
 CF.Key.set(KEY)
+
