@@ -1,6 +1,7 @@
 import wiringpi
 import TestPhoto
 import time
+import struct
 import asyncio
 import logging
 from shutil import copyfile
@@ -15,6 +16,7 @@ wiringpi.wiringPiSetup()
 serial = wiringpi.serialOpen("/dev/ttyAMA0", 921600)
 loop = asyncio.get_event_loop()
 log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 log.debug("Starting serial connection")
 
@@ -41,8 +43,8 @@ while(True):
         code = wiringpi.serialGetchar(serial)
         log.debug("Recieved: %d", code)
      
-        size = list(get_chars(4))
-        sizeI = sum(map(lambda x: max(x[0]*256, 1)*x[1], enumerate(size[::-1])))
+        size = bytes(get_chars(4))
+        sizeI = struct.unpack('>i', size)[0]
         log.debug("Payload size: %d", sizeI)
      
         with open(STREAM_FILE, "wb") as f, open(DETECT_FILE, "wb") as t:
