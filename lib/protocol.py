@@ -15,7 +15,7 @@ IMG_DIR = "img"
 wiringpi.wiringPiSetup()
 serial = wiringpi.serialOpen("/dev/ttyAMA0", 921600)
 loop = asyncio.get_event_loop()
-loREADME: g = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 async def check_azure(detect_file):
     fileout = TestPhoto.detect(detect_file)

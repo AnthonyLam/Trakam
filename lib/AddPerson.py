@@ -14,7 +14,6 @@ file = sys.argv[1]
 name = sys.argv[2]
 
 print("file = {}\nname = {}".format(file,name))
-input("Press the any key to continue")
 
 output = CF.person.create('people', name)
 print(output)
