@@ -32,26 +32,26 @@ def get_chars(size):
 
 
 while(True):
-     wiringpi.serialPutchar(serial, 55)
+    wiringpi.serialPutchar(serial, 55)
      
-     if(wiringpi.serialDataAvail(serial) > 0):
-         code = wiringpi.serialGetchar(serial)
-         print("Recieved: ", code)
+    if(wiringpi.serialDataAvail(serial) > 0):
+        code = wiringpi.serialGetchar(serial)
+        print("Recieved: ", code)
      
-         size = list(get_chars(4))
-         sizeI = sum(map(lambda x: max(x[0]*256, 1)*x[1], enumerate(size[::-1])))
-         print("Payload size:", sizeI)
+        size = list(get_chars(4))
+        sizeI = sum(map(lambda x: max(x[0]*256, 1)*x[1], enumerate(size[::-1])))
+        print("Payload size:", sizeI)
      
-         with open(STREAM_FILE, "wb") as f, open(DETECT_FILE, "wb") as t:
-             b = bytes(list(get_chars(sizeI)))
-             f.write(b)
-             f.flush()
-             t.write(b)
-             t.flush()
+        with open(STREAM_FILE, "wb") as f, open(DETECT_FILE, "wb") as t:
+            b = bytes(list(get_chars(sizeI)))
+            f.write(b)
+            f.flush()
+            t.write(b)
+            t.flush()
              
-         if(code == 11):
-             loop.run_until_complete(check_azure())
-     time.sleep(1)
+        if(code == 11):
+            loop.run_until_complete(check_azure())
+    time.sleep(0.1)
      
 loop.close()
 wiringpi.serialFlush(serial)
