@@ -2,6 +2,9 @@ package com.trakam.trakam.fragments.recentactivity
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
+import android.app.Dialog
+import android.app.DialogFragment
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -27,7 +30,7 @@ import java.io.File
 import java.io.IOException
 import java.text.DateFormat
 
-class RecentActivityFragment : BaseFragment(), OnLogEventListener {
+class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickListener {
 
     companion object {
         val TAG = RecentActivityFragment::class.qualifiedName
@@ -44,7 +47,7 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
-        mRecyclerViewAdapter = MyRecyclerViewAdapter(activity!!)
+        mRecyclerViewAdapter = MyRecyclerViewAdapter(activity!!, this)
     }
 
     override fun onCreateView(inflater: LayoutInflater,
@@ -142,6 +145,25 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
         super.onStop()
     }
 
+    override fun onClick(v: View) {
+        when (v.id) {
+            R.id.recent_activity_list_root -> {
+                val pos = mLinearLayoutManager.getPosition(v)
+                if (pos != RecyclerView.NO_POSITION) {
+                    val host = activity!!.getDefaultSharedPreferences()
+                            .getString(PrefKeys.Server.KEY_SERVER_HOST,
+                                    PrefKeys.Server.Default.SERVER_HOST)
+                    val port = activity!!.getDefaultSharedPreferences()
+                            .getString(PrefKeys.Server.KEY_SERVER_PORT,
+                                    PrefKeys.Server.Default.SERVER_PORT)
+                    val url = "http://$host:$port/%s.jpg".format(mRecyclerViewAdapter[pos].log.uuid)
+                    EventPictureViewerDialogFragment.newInstance(url)
+                            .show(fragmentManager, EventPictureViewerDialogFragment.TAG)
+                }
+            }
+        }
+    }
+
     override fun onServerPollingServiceBound(serverPollingService: ServerPollingService) {
         serverPollingService.pause()
 
@@ -173,41 +195,40 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener {
 internal class ListItem(val log: Log) {
 }
 
-private class MyRecyclerViewAdapter(private val context: Context) :
+private class MyRecyclerViewAdapter(private val context: Context,
+                                    private val onClickListener: View.OnClickListener) :
         RecyclerView.Adapter<MyRecyclerViewAdapter.MyViewHolder>() {
-
-    companion object {
-        private val URL = ServerUtil.BASE_URL.format("%s.jpg")
-    }
 
     private val mData = mutableListOf<ListItem>()
     private val mTransformation: BitmapTransformation = BitmapTransformation.Builder(context)
             .setBorderEnabled(false)
             .build()
 
+    private val mUrl: String
+
+    init {
+        val host = context.getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_SERVER_HOST,
+                PrefKeys.Server.Default.SERVER_HOST)
+        val port = context.getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_SERVER_PORT,
+                PrefKeys.Server.Default.SERVER_PORT)
+        mUrl = "http://$host:$port/%s.jpg"
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
         val view = LayoutInflater.from(parent.context)
                 .inflate(R.layout.frag_recent_activity_list_item,
                         parent, false)
+        view.setOnClickListener(onClickListener)
         return MyViewHolder(view)
     }
 
-    fun add(listItem: ListItem) {
-        mData += listItem
-        notifyItemInserted(mData.size - 1)
-    }
-
-    fun clear() {
-        val size = mData.size
-        mData.clear()
-        notifyItemRangeRemoved(0, size)
-    }
-
     fun setItems(items: List<ListItem>) {
-        clear()
+        mData.clear()
         mData += items
-        notifyItemRangeInserted(0, items.size)
+        notifyDataSetChanged()
     }
+
+    operator fun get(index: Int) = mData[index]
 
     override fun getItemCount() = mData.size
 
@@ -225,7 +246,7 @@ private class MyRecyclerViewAdapter(private val context: Context) :
                 .cancelRequest(holder.pic)
 
         Picasso.with(context)
-                .load(URL.format(listItem.log.uuid))
+                .load(mUrl.format(listItem.log.uuid))
                 .transform(mTransformation)
                 .fit()
                 .centerCrop()
@@ -237,5 +258,38 @@ private class MyRecyclerViewAdapter(private val context: Context) :
         val pic: ImageView = itemView.findViewById(R.id.imageView)
         val name: TextView = itemView.findViewById(R.id.name)
         val timeStamp: TextView = itemView.findViewById(R.id.timeStamp)
+    }
+}
+
+internal class EventPictureViewerDialogFragment : DialogFragment() {
+    companion object {
+        val TAG = EventPictureViewerDialogFragment::class.qualifiedName
+        private val KEY_URL = TAG + "_key_url"
+
+        fun newInstance(url: String): EventPictureViewerDialogFragment {
+            val args = Bundle()
+            args.putString(KEY_URL, url)
+
+            val frag = EventPictureViewerDialogFragment()
+            frag.arguments = args
+            return frag
+        }
+    }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val view = inflateLayout(R.layout.event_picture_viewer_dialog)
+        val imageView = view.findViewById<ImageView>(R.id.imageView)
+
+        val url = arguments!!.getString(KEY_URL)
+        Picasso.with(activity!!)
+                .load(url)
+                .fit()
+                .centerCrop()
+                .placeholder(R.drawable.ic_account_circle_grey_700_48dp)
+                .into(imageView)
+
+        return AlertDialog.Builder(activity!!)
+                .setView(view)
+                .create()
     }
 }

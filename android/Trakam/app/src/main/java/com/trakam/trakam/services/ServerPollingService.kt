@@ -112,7 +112,11 @@ class ServerPollingService : BaseService() {
                                 firstName = firstNameLastName[0]
                                 lastName = firstNameLastName[1]
                             } else {
-                                firstName = firstNameLastName[0]
+                                firstName = if (firstNameLastName[0] == "unknown") {
+                                    "Unknown person"
+                                } else {
+                                    firstNameLastName[0]
+                                }
                                 lastName = ""
                             }
 
