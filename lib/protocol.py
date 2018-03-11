@@ -4,33 +4,33 @@ import time
 import struct
 import asyncio
 import logging
+import requests
 from shutil import copyfile
 
 
-STREAM_FILE = "stream.jpg"
-DETECT_FILE = "test.jpg"
+STREAM_SERVER = "http://localhost:4081/"
 LOG_FILE = "logs/out.log"
 IMG_DIR = "img"
 
 wiringpi.wiringPiSetup()
 serial = wiringpi.serialOpen("/dev/ttyAMA0", 921600)
 loop = asyncio.get_event_loop()
-log = logging.getLogger(__name__)
+loREADME: g = logging.getLogger(__name__)
 
-print("Starting serial connection")
-
-async def check_azure():
-    fileout = TestPhoto.detect(DETECT_FILE)
+async def check_azure(detect_file):
+    fileout = TestPhoto.detect(detect_file)
     for detection in fileout:
         uuid = detection.split(sep=',')[0]
-        copyfile(DETECT_FILE, "{}/{}.jpg".format(IMG_DIR, uuid))
+        with open("{}/{}.jpg".format(IMG_DIR, uuid)) as f:
+            f.write(detect_file)
     with open(LOG_FILE, "a") as f:
         for o in fileout:
             f.write(o + "\n")
         f.flush()
 
+
 def get_chars(size):
-    for x in range(size):
+    for _ in range(size):
         yield wiringpi.serialGetchar(serial)
 
 
@@ -45,15 +45,10 @@ while(True):
         sizeI = struct.unpack('>i', size)[0]
         print("Payload size: %d", sizeI)
      
-        with open(STREAM_FILE, "wb") as f, open(DETECT_FILE, "wb") as t:
-            b = bytes(list(get_chars(sizeI)))
-            f.write(b)
-            f.flush()
-            t.write(b)
-            t.flush()
-             
+        b = bytes(get_chars(sizeI))
+        requests.post(STREAM_SERVER, data=b, headers={"Content-Type": "image/jpeg"})
         if(code == 11):
-            loop.run_until_complete(check_azure())
+            loop.run_until_complete(check_azure(b))
     time.sleep(0.1)
      
 loop.close()
