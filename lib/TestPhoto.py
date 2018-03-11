@@ -5,7 +5,11 @@ import uuid
 import time
 
 pp = pprint.PrettyPrinter(indent=4)
-KEY = '90823e5520ad43b3b8e828ba6b1a7a3e'
+with open('faceapi.key', 'r') as f:
+    KEY = str(f.readline()).strip()
+    print("The key: ", KEY)
+if not KEY:
+    sys.exit(-1)
 CF.Key.set(KEY)
 
 def detect(file):
@@ -22,7 +26,10 @@ def detect(file):
             identifyOut = CF.face.identify(output, 'people')
         except Exception as e:
             print("No faces trained")
-            return []
+            for x in detectOut:
+                name = "unknown"
+                ret.append("{},{},{}".format(str(uuid.uuid4()), name, int(time.time() * 1000)))
+            return ret
 
         pp.pprint(identifyOut)
         
@@ -30,6 +37,9 @@ def detect(file):
             for candidate in x['candidates']:
                 name = CF.person.get('people', candidate['personId'])['name']
                 print(name)
+                ret.append("{},{},{}".format(str(uuid.uuid4()), name, int(time.time() * 1000)))
+            if len(x['candidates']) == 0:
+                name = "unknown"
                 ret.append("{},{},{}".format(str(uuid.uuid4()), name, int(time.time() * 1000)))
     return ret
     

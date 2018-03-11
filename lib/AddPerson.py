@@ -2,15 +2,13 @@ import cognitive_face as CF
 import sys
 import time
 from PIL import Image
+import SetupCF
 
 if len(sys.argv) < 3:
 	print( "This is no good")
 	sys.exit();
 
-KEY = '90823e5520ad43b3b8e828ba6b1a7a3e'
 OFFSET = 25
-
-CF.Key.set(KEY)
 
 file = sys.argv[1]
 name = sys.argv[2]
