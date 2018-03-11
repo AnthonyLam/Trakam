@@ -30,6 +30,7 @@ import com.trakam.trakam.fragments.base.BaseFragment
 import com.trakam.trakam.services.OnLogEventListener
 import com.trakam.trakam.services.ServerPollingService
 import com.trakam.trakam.util.*
+import rx.Subscription
 import java.io.File
 import java.io.IOException
 import java.text.DateFormat
@@ -52,6 +53,7 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
     private lateinit var mLiveFeedError: TextView
     private lateinit var mMjpegView: MjpegSurfaceView
     private lateinit var mMjpeg: Mjpeg
+    private lateinit var mSubscription: Subscription
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,6 +86,7 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
             mProgressBar.visibility = View.VISIBLE
             mLiveFeedError.visibility = View.GONE
 
+            mSubscription.unsubscribe()
             startStreaming()
         }
 
@@ -95,8 +98,14 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
         startStreaming()
     }
 
+    override fun onPause() {
+        mMjpegView.stopPlayback()
+        mSubscription.unsubscribe()
+        super.onPause()
+    }
+
     private fun startStreaming() {
-        mMjpeg.open(STREAM_URL)
+        mSubscription = mMjpeg.open(STREAM_URL)
                 .subscribe({
                     mMjpegView.setSource(it)
                     mMjpegView.setDisplayMode(DisplayMode.BEST_FIT)
@@ -174,10 +183,6 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
                 }
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
     }
 
     override fun onStop() {
