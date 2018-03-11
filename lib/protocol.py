@@ -2,38 +2,40 @@ import wiringpi
 import TestPhoto
 import time
 import struct
-import asyncio
 import logging
 import requests
+import threading
 from shutil import copyfile
 
 
-STREAM_SERVER = "http://localhost:4081/"
+STREAM_SERVER = "http://127.0.0.1:4081/"
+IMG_TMP = "/var/img/"
 LOG_FILE = "logs/out.log"
 IMG_DIR = "img"
 
 wiringpi.wiringPiSetup()
 serial = wiringpi.serialOpen("/dev/ttyAMA0", 921600)
-loop = asyncio.get_event_loop()
 log = logging.getLogger(__name__)
 
-async def check_azure(detect_file):
-    fileout = TestPhoto.detect(detect_file)
-    for detection in fileout:
-        uuid = detection.split(sep=',')[0]
-        with open("{}/{}.jpg".format(IMG_DIR, uuid)) as f:
-            f.write(detect_file)
-    with open(LOG_FILE, "a") as f:
-        for o in fileout:
-            f.write(o + "\n")
-        f.flush()
+class AzureDetect(threading.Thread):
+    def __init__(self, img):
+        threading.Thread.__init__(self)
+        self.img = img
 
+    def run(self):
+        fileout = TestPhoto.detect(self.img)
+        for detection in fileout:
+            uuid = detection.split(sep=',')[0]
+            copyfile(self.img,"{}/{}.jpg".format(IMG_DIR, uuid))
+        with open(LOG_FILE, "a") as f:
+            for o in fileout:
+                f.write(o + "\n")
 
 def get_chars(size):
     for _ in range(size):
         yield wiringpi.serialGetchar(serial)
 
-
+count = 0
 while(True):
     wiringpi.serialPutchar(serial, 55)
      
@@ -46,11 +48,16 @@ while(True):
         print("Payload size: %d", sizeI)
      
         b = bytes(get_chars(sizeI))
-        requests.post(STREAM_SERVER, data=b, headers={"Content-Type": "image/jpeg"})
+        file_name = "{}{}.jpg".format(IMG_TMP, count)
+        if count >= 100:
+            count = 0
+        with open(file_name, "wb") as f:
+            f.write(b)
+        count += 1
         if(code == 11):
-            loop.run_until_complete(check_azure(b))
+            t = AzureDetect(file_name)
+            t.start()
     time.sleep(0.1)
      
-loop.close()
 wiringpi.serialFlush(serial)
 wiringpi.serialClose(serial)
