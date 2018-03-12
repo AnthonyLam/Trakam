@@ -18,6 +18,7 @@ import com.microsoft.projectoxford.face.FaceServiceClient
 import com.microsoft.projectoxford.face.FaceServiceRestClient
 import com.microsoft.projectoxford.face.rest.ClientException
 import com.trakam.trakam.R
+import com.trakam.trakam.util.FaceAPI
 import com.trakam.trakam.util.inflateLayout
 import com.trakam.trakam.util.showToast
 import java.io.ByteArrayInputStream
@@ -108,12 +109,9 @@ class SendDialogFragment : DialogFragment() {
             frag.mName = name
             return frag
         }
-
-        private const val SUB_KEY = "fb648f47875e4dba98ed1267aec784e7"
-        private const val PERSON_GROUP_ID = "people"
     }
 
-    private val mFaceServiceClient = FaceServiceRestClient(SUB_KEY)
+    private val mFaceServiceClient = FaceServiceRestClient(FaceAPI.SUB_KEY)
 
     private lateinit var mBitmap: Bitmap
     private lateinit var mName: String
@@ -150,7 +148,7 @@ class SendDialogFragment : DialogFragment() {
 
         override fun doInBackground(vararg params: Any): Pair<Boolean, String> {
             try {
-                val result = faceServiceClient.createPerson(PERSON_GROUP_ID,
+                val result = faceServiceClient.createPerson(FaceAPI.PERSON_GROUP_ID,
                         name, "")
 
                 val outputStream = ByteArrayOutputStream()
@@ -158,10 +156,10 @@ class SendDialogFragment : DialogFragment() {
 
                 val inputStream = ByteArrayInputStream(outputStream.toByteArray())
 
-                faceServiceClient.addPersonFace(PERSON_GROUP_ID,
+                faceServiceClient.addPersonFace(FaceAPI.PERSON_GROUP_ID,
                         result.personId, inputStream,
                         "", null)
-                faceServiceClient.trainPersonGroup(PERSON_GROUP_ID)
+                faceServiceClient.trainPersonGroup(FaceAPI.PERSON_GROUP_ID)
                 return Pair(true, "")
             } catch (e: ClientException) {
                 return Pair(false, e.message ?: "")

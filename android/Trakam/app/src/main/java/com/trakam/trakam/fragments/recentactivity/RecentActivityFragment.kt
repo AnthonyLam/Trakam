@@ -7,6 +7,9 @@ import android.app.Dialog
 import android.app.DialogFragment
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.os.AsyncTask
 import android.os.Bundle
 import android.provider.MediaStore
 import android.support.v4.content.FileProvider
@@ -14,6 +17,7 @@ import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.*
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -21,18 +25,27 @@ import androidx.net.toUri
 import com.github.niqdev.mjpeg.DisplayMode
 import com.github.niqdev.mjpeg.Mjpeg
 import com.github.niqdev.mjpeg.MjpegSurfaceView
+import com.microsoft.projectoxford.face.FaceServiceRestClient
+import com.microsoft.projectoxford.face.rest.ClientException
 import com.squareup.picasso.Picasso
 import com.trakam.trakam.R
 import com.trakam.trakam.activities.ImagePreviewActivity
 import com.trakam.trakam.activities.SettingsActivity
 import com.trakam.trakam.data.Log
+import com.trakam.trakam.db.AppDatabase
+import com.trakam.trakam.db.PeopleDao
+import com.trakam.trakam.db.Person
 import com.trakam.trakam.fragments.base.BaseFragment
 import com.trakam.trakam.services.OnLogEventListener
 import com.trakam.trakam.services.ServerPollingService
 import com.trakam.trakam.util.*
+import okhttp3.Request
 import rx.Subscription
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
+import java.lang.ref.WeakReference
 import java.text.DateFormat
 
 class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickListener {
@@ -195,14 +208,7 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
             R.id.recent_activity_list_root -> {
                 val pos = mLinearLayoutManager.getPosition(v)
                 if (pos != RecyclerView.NO_POSITION) {
-                    val host = activity!!.getDefaultSharedPreferences()
-                            .getString(PrefKeys.Server.KEY_SERVER_HOST,
-                                    PrefKeys.Server.Default.SERVER_HOST)
-                    val port = activity!!.getDefaultSharedPreferences()
-                            .getString(PrefKeys.Server.KEY_SERVER_PORT,
-                                    PrefKeys.Server.Default.SERVER_PORT)
-                    val url = "http://$host:$port/%s.jpg".format(mRecyclerViewAdapter[pos].log.uuid)
-                    EventPictureViewerDialogFragment.newInstance(url)
+                    EventPictureViewerDialogFragment.newInstance(mRecyclerViewAdapter[pos].log)
                             .show(fragmentManager, EventPictureViewerDialogFragment.TAG)
                 }
             }
@@ -250,6 +256,8 @@ private class MyRecyclerViewAdapter(private val context: Context,
             .build()
 
     private val mUrl: String
+    private val mRegularTextColor: Int
+    private val mBlackListTextColor: Int
 
     init {
         val host = context.getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_SERVER_HOST,
@@ -257,6 +265,9 @@ private class MyRecyclerViewAdapter(private val context: Context,
         val port = context.getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_SERVER_PORT,
                 PrefKeys.Server.Default.SERVER_PORT)
         mUrl = "http://$host:$port/%s.jpg"
+
+        mRegularTextColor = context.getAttrColor(R.attr.primary_text_color)
+        mBlackListTextColor = Color.parseColor("#C2185B")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -285,6 +296,13 @@ private class MyRecyclerViewAdapter(private val context: Context,
         } else {
             holder.name.text = listItem.log.firstName
         }
+
+        if (listItem.log.blacklisted) {
+            holder.name.setTextColor(mBlackListTextColor)
+        } else {
+            holder.name.setTextColor(mRegularTextColor)
+        }
+
         holder.timeStamp.text = DateFormat.getDateTimeInstance().format(listItem.log.timestamp)
 
         Picasso.with(context)
@@ -309,23 +327,33 @@ private class MyRecyclerViewAdapter(private val context: Context,
 internal class EventPictureViewerDialogFragment : DialogFragment() {
     companion object {
         val TAG = EventPictureViewerDialogFragment::class.qualifiedName
-        private val KEY_URL = TAG + "_key_url"
 
-        fun newInstance(url: String): EventPictureViewerDialogFragment {
-            val args = Bundle()
-            args.putString(KEY_URL, url)
-
+        fun newInstance(log: Log): EventPictureViewerDialogFragment {
             val frag = EventPictureViewerDialogFragment()
-            frag.arguments = args
+            frag.mLog = log
             return frag
         }
+    }
+
+    private lateinit var mLog: Log
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        retainInstance = true
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val view = inflateLayout(R.layout.event_picture_viewer_dialog)
         val imageView = view.findViewById<ImageView>(R.id.imageView)
 
-        val url = arguments!!.getString(KEY_URL)
+        val host = activity!!.getDefaultSharedPreferences()
+                .getString(PrefKeys.Server.KEY_SERVER_HOST,
+                        PrefKeys.Server.Default.SERVER_HOST)
+        val port = activity!!.getDefaultSharedPreferences()
+                .getString(PrefKeys.Server.KEY_SERVER_PORT,
+                        PrefKeys.Server.Default.SERVER_PORT)
+        val url = "http://$host:$port/%s.jpg".format(mLog.uuid)
+
         Picasso.with(activity!!)
                 .load(url)
                 .fit()
@@ -333,8 +361,203 @@ internal class EventPictureViewerDialogFragment : DialogFragment() {
                 .placeholder(R.drawable.ic_account_circle_grey_700_48dp)
                 .into(imageView)
 
-        return AlertDialog.Builder(activity!!)
+        val dialogBuilder = AlertDialog.Builder(activity!!)
                 .setView(view)
+
+        if (mLog.firstName == "Unknown person") {
+            dialogBuilder.setPositiveButton("Whitelist", { _, _ ->
+                GetNameDialogFragment.newInstance(mLog, false)
+                        .show(fragmentManager, GetNameDialogFragment.TAG)
+            })
+
+            dialogBuilder.setNegativeButton("Blacklist", { _, _ ->
+                GetNameDialogFragment.newInstance(mLog, true)
+                        .show(fragmentManager, GetNameDialogFragment.TAG)
+            })
+        }
+
+        return dialogBuilder.create()
+    }
+}
+
+
+class GetNameDialogFragment : DialogFragment() {
+    companion object {
+        val TAG = GetNameDialogFragment::class.qualifiedName
+
+        fun newInstance(log: Log, blackList: Boolean): GetNameDialogFragment {
+            val frag = GetNameDialogFragment()
+            frag.mLog = log
+            frag.mMarkAsBlacklist = blackList
+            return frag
+        }
+    }
+
+    private lateinit var mLog: Log
+    private var mMarkAsBlacklist = false
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        retainInstance = true
+    }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val view = inflateLayout(R.layout.get_name_dialog)
+        val editText = view.findViewById<EditText>(R.id.editText)
+        isCancelable = false
+        return AlertDialog.Builder(activity!!)
+                .setTitle(getString(R.string.name))
+                .setView(view)
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok, { _, _ ->
+                    val name = editText.text.toString()
+                    if (name.isEmpty()) {
+                        activity!!.showToast("Name is empty!")
+                    } else {
+                        SendToAzureProgressDialog.newInstance(mLog, name, mMarkAsBlacklist)
+                                .show(fragmentManager, SendToAzureProgressDialog.TAG)
+                    }
+                    dismiss()
+                })
+                .setNegativeButton(android.R.string.cancel, { _, _ ->
+                    dismiss()
+                })
                 .create()
     }
+}
+
+internal class SendToAzureProgressDialog : DialogFragment() {
+    companion object {
+        val TAG = SendToAzureProgressDialog::class.qualifiedName
+
+        fun newInstance(log: Log, newName: String, blackList: Boolean): SendToAzureProgressDialog {
+            val frag = SendToAzureProgressDialog()
+            frag.mLog = log
+            frag.mMarkBlacklist = blackList
+            frag.mName = newName
+            return frag
+        }
+    }
+
+    private lateinit var mName: String
+    private lateinit var mLog: Log
+    private var mMarkBlacklist: Boolean = false
+    private var mSendTask: SendTask? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        retainInstance = true
+    }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val view = inflateLayout(R.layout.progress_dialog)
+        val textView = view.findViewById<TextView>(R.id.message)
+        textView.text = "Processing..."
+
+        isCancelable = false
+        return AlertDialog.Builder(activity!!)
+                .setView(view)
+                .setCancelable(false)
+                .create()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (mSendTask == null) {
+            mSendTask = SendTask(this, mLog, mName, mMarkBlacklist)
+            mSendTask?.execute()
+        }
+    }
+
+    class SendTask(frag: SendToAzureProgressDialog,
+                   log: Log,
+                   private val mNewName: String,
+                   private val mMarkAsBlacklist: Boolean) : AsyncTask<Any, Any, Pair<Boolean, String>>() {
+
+        private val mUrl: String
+        private val mFragRef = WeakReference(frag)
+        private val mDao: PeopleDao
+
+        init {
+            val host = frag.activity!!.getDefaultSharedPreferences()
+                    .getString(PrefKeys.Server.KEY_SERVER_HOST,
+                            PrefKeys.Server.Default.SERVER_HOST)
+            val port = frag.activity!!.getDefaultSharedPreferences()
+                    .getString(PrefKeys.Server.KEY_SERVER_PORT,
+                            PrefKeys.Server.Default.SERVER_PORT)
+            mUrl = "http://$host:$port/%s-face.jpg".format(log.uuid)
+
+            mDao = AppDatabase.getInstance(frag.activity!!).peopleDao()
+        }
+
+        override fun doInBackground(vararg params: Any): Pair<Boolean, String> {
+            // get the face
+            val trainResult = trainFace()
+            if (trainResult.first && mMarkAsBlacklist) {
+                val name = mNewName.trim()
+                if (name.contains(' ')) {
+                    val firstNameLastName = StringSplitter.splitOnEmptySequence(name)
+                    mDao.insert(Person(firstName = firstNameLastName[0], lastName = firstNameLastName[1]))
+                } else {
+                    mDao.insert(Person(firstName = name, lastName = ""))
+                }
+                return Pair(true, "")
+            } else {
+                return trainResult
+            }
+        }
+
+        private fun trainFace(): Pair<Boolean, String> {
+            val req = Request.Builder()
+                    .url(mUrl)
+                    .build()
+
+            val getFaceResult = ServerUtil.makeRequest(req) {
+                val bytes = it.body()?.bytes()
+                it.body()?.close()
+                bytes
+            }
+            if (!getFaceResult.success || getFaceResult.data == null) {
+                return Pair(false, "")
+            }
+
+            try {
+                val faceServiceClient = FaceServiceRestClient(FaceAPI.SUB_KEY)
+                val result = faceServiceClient.createPerson(FaceAPI.PERSON_GROUP_ID,
+                        mNewName, "")
+                val inputStream = ByteArrayInputStream(getFaceResult.data)
+
+                faceServiceClient.addPersonFace(FaceAPI.PERSON_GROUP_ID,
+                        result.personId, inputStream,
+                        "", null)
+                faceServiceClient.trainPersonGroup(FaceAPI.PERSON_GROUP_ID)
+                return Pair(true, "")
+            } catch (e: ClientException) {
+                return Pair(false, e.message ?: "")
+            } catch (e: IOException) {
+                return Pair(false, "")
+            }
+        }
+
+        override fun onPostExecute(result: Pair<Boolean, String>) {
+            val frag = mFragRef.get() ?: return
+
+            if (frag.activity == null) {
+                return
+            }
+
+            val (success, errMsg) = result
+            if (success) {
+                frag.activity!!.showToast("Sent!")
+            } else {
+                if (errMsg.isNotEmpty()) {
+                    frag.activity!!.showToast(errMsg)
+                } else {
+                    frag.activity!!.showToast("Send failed!")
+                }
+            }
+            frag.dismiss()
+        }
+    }
+
 }

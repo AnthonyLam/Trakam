@@ -8,6 +8,7 @@ import android.content.SharedPreferences
 import android.graphics.Typeface
 import android.os.Build
 import android.preference.PreferenceManager
+import android.support.annotation.AttrRes
 import android.support.annotation.IdRes
 import android.support.annotation.LayoutRes
 import android.util.TypedValue
@@ -82,6 +83,15 @@ fun Context.dipToPix(value: Float): Float {
 
 fun Context.getDefaultSharedPreferences(): SharedPreferences =
         PreferenceManager.getDefaultSharedPreferences(this)
+
+fun Context.getAttrColor(@AttrRes attr: Int): Int {
+    val typedValue = TypedValue()
+    return if (theme.resolveAttribute(attr, typedValue, true)) {
+        typedValue.data
+    } else {
+        throw IllegalStateException("Color attr not found")
+    }
+}
 
 //// END Context
 

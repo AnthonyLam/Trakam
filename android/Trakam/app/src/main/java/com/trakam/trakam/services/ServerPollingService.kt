@@ -8,6 +8,8 @@ import android.os.Handler
 import android.os.Looper
 import android.support.annotation.UiThread
 import com.trakam.trakam.data.Log
+import com.trakam.trakam.db.AppDatabase
+import com.trakam.trakam.db.PeopleDao
 import com.trakam.trakam.util.*
 import okhttp3.HttpUrl
 import okhttp3.Request
@@ -41,8 +43,11 @@ class ServerPollingService : BaseService() {
     private val mRequestLock = Any()
     private lateinit var mRequest: Request
 
+    private lateinit var mDao: PeopleDao
+
     override fun onCreate() {
         super.onCreate()
+        mDao = AppDatabase.getInstance(this).peopleDao()
         setupRequest()
     }
 
@@ -51,8 +56,7 @@ class ServerPollingService : BaseService() {
                 PrefKeys.Server.Default.SERVER_HOST)
         val port = getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_SERVER_PORT,
                 PrefKeys.Server.Default.SERVER_PORT)
-        val url = HttpUrl.parse("http://$host:$port/logs")
-                ?: throw RuntimeException("Failed to parse url")
+        val url = "http://$host:$port/logs"
         synchronized(mRequestLock) {
             mRequest = Request.Builder()
                     .url(url)
@@ -122,7 +126,13 @@ class ServerPollingService : BaseService() {
 
                             val time = tokens[2].trim().toLong()
 
-                            val log = Log(id, firstName, lastName, Date(time))
+                            val foundInBlacklist = mDao.getAll()
+                                    .find {
+                                        it.firstName == firstName && it.lastName == lastName
+                                    }
+
+                            val log = Log(id, firstName, lastName,
+                                    foundInBlacklist != null, Date(time))
                             logs += log
 
                             MyLogger.logDebug(ServerPollingService::class, "log: $log")
