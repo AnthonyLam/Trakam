@@ -7,7 +7,6 @@ import android.app.Dialog
 import android.app.DialogFragment
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.AsyncTask
 import android.os.Bundle
@@ -42,7 +41,6 @@ import com.trakam.trakam.util.*
 import okhttp3.Request
 import rx.Subscription
 import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.lang.ref.WeakReference
