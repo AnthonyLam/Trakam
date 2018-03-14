@@ -39,11 +39,11 @@ class UnknownPersonActivity : BaseActivity() {
         val whitelistBtn = findViewById<Button>(R.id.btnWhitelist)
 
         val host = getDefaultSharedPreferences()
-                .getString(PrefKeys.Server.KEY_SERVER_HOST,
-                        PrefKeys.Server.Default.SERVER_HOST)
+                .getString(PrefKeys.Server.KEY_HOST,
+                        PrefKeys.Server.Default.HOST)
         val port = getDefaultSharedPreferences()
-                .getString(PrefKeys.Server.KEY_SERVER_PORT,
-                        PrefKeys.Server.Default.SERVER_PORT)
+                .getString(PrefKeys.Server.KEY_PORT,
+                        PrefKeys.Server.Default.PORT)
 
         val uuid = intent.getStringExtra(EXTRA_UUID)
         val url = "http://$host:$port/%s.jpg".format(uuid)
@@ -170,11 +170,11 @@ class UnknownPersonActivity : BaseActivity() {
 
             init {
                 val host = frag.activity!!.getDefaultSharedPreferences()
-                        .getString(PrefKeys.Server.KEY_SERVER_HOST,
-                                PrefKeys.Server.Default.SERVER_HOST)
+                        .getString(PrefKeys.Server.KEY_HOST,
+                                PrefKeys.Server.Default.HOST)
                 val port = frag.activity!!.getDefaultSharedPreferences()
-                        .getString(PrefKeys.Server.KEY_SERVER_PORT,
-                                PrefKeys.Server.Default.SERVER_PORT)
+                        .getString(PrefKeys.Server.KEY_PORT,
+                                PrefKeys.Server.Default.PORT)
                 mUrl = "http://$host:$port/%s-face.jpg".format(uuid)
 
                 mDao = AppDatabase.getInstance(frag.activity!!).peopleDao()

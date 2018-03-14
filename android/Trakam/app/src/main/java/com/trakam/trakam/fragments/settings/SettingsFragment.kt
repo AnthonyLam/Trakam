@@ -20,17 +20,25 @@ class SettingsFragment : PreferenceFragment() {
 
     private fun setupPrefs() {
         setupCategoryServer()
+        setupCategoryLiveFeed()
+    }
+
+    private fun setupCategoryLiveFeed() {
+        val sharedPrefs = getDefaultSharedPreferences(activity)
+        val prefPort = findPreference(PrefKeys.LiveFeed.KEY_PORT)
+        prefPort.summary = sharedPrefs.getString(PrefKeys.LiveFeed.KEY_PORT,
+                PrefKeys.LiveFeed.Default.PORT)
     }
 
     private fun setupCategoryServer() {
         val sharedPrefs = getDefaultSharedPreferences(activity)
-        val prefHost = findPreference(PrefKeys.Server.KEY_SERVER_HOST)
-        prefHost.summary = sharedPrefs.getString(PrefKeys.Server.KEY_SERVER_HOST,
-                PrefKeys.Server.Default.SERVER_HOST)
+        val prefHost = findPreference(PrefKeys.Server.KEY_HOST)
+        prefHost.summary = sharedPrefs.getString(PrefKeys.Server.KEY_HOST,
+                PrefKeys.Server.Default.HOST)
 
-        val prefPort = findPreference(PrefKeys.Server.KEY_SERVER_PORT)
-        prefPort.summary = sharedPrefs.getString(PrefKeys.Server.KEY_SERVER_PORT,
-                PrefKeys.Server.Default.SERVER_PORT)
+        val prefPort = findPreference(PrefKeys.Server.KEY_PORT)
+        prefPort.summary = sharedPrefs.getString(PrefKeys.Server.KEY_PORT,
+                PrefKeys.Server.Default.PORT)
     }
 
 }

@@ -44,7 +44,7 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
         private const val REQ_CAMERA = 1
         private const val TEMP_FILE_NAME = "pic.jpg"
         private const val PICS_DIR = "pics"
-        private const val STREAM_URL = "http://192.168.0.189:8090/?action=stream"
+        private const val STREAM_URL = "http://192.168.0.189:%s/?action=stream"
     }
 
     private lateinit var mRecyclerViewAdapter: MyRecyclerViewAdapter
@@ -107,7 +107,9 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
     }
 
     private fun startStreaming() {
-        mSubscription = mMjpeg.open(STREAM_URL)
+        val port = activity!!.getDefaultSharedPreferences()
+                .getString(PrefKeys.LiveFeed.KEY_PORT, PrefKeys.LiveFeed.Default.PORT)
+        mSubscription = mMjpeg.open(STREAM_URL.format(port))
                 .subscribe({
                     mMjpegView.setSource(it)
                     mMjpegView.setDisplayMode(DisplayMode.BEST_FIT)
@@ -256,10 +258,10 @@ private class MyRecyclerViewAdapter(private val context: Context,
     private val mBlackListTextColor: Int
 
     init {
-        val host = context.getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_SERVER_HOST,
-                PrefKeys.Server.Default.SERVER_HOST)
-        val port = context.getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_SERVER_PORT,
-                PrefKeys.Server.Default.SERVER_PORT)
+        val host = context.getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_HOST,
+                PrefKeys.Server.Default.HOST)
+        val port = context.getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_PORT,
+                PrefKeys.Server.Default.PORT)
         mUrl = "http://$host:$port/%s.jpg"
 
         mRegularTextColor = context.getAttrColor(R.attr.primary_text_color)
@@ -343,11 +345,11 @@ internal class EventPictureViewerDialogFragment : DialogFragment() {
         val imageView = view.findViewById<ImageView>(R.id.imageView)
 
         val host = activity!!.getDefaultSharedPreferences()
-                .getString(PrefKeys.Server.KEY_SERVER_HOST,
-                        PrefKeys.Server.Default.SERVER_HOST)
+                .getString(PrefKeys.Server.KEY_HOST,
+                        PrefKeys.Server.Default.HOST)
         val port = activity!!.getDefaultSharedPreferences()
-                .getString(PrefKeys.Server.KEY_SERVER_PORT,
-                        PrefKeys.Server.Default.SERVER_PORT)
+                .getString(PrefKeys.Server.KEY_PORT,
+                        PrefKeys.Server.Default.PORT)
         val url = "http://$host:$port/%s.jpg".format(mLog.uuid)
         Picasso.with(activity!!)
                 .load(url)

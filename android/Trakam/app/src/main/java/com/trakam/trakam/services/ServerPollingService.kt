@@ -11,7 +11,6 @@ import com.trakam.trakam.data.Log
 import com.trakam.trakam.db.AppDatabase
 import com.trakam.trakam.db.PeopleDao
 import com.trakam.trakam.util.*
-import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import java.io.BufferedReader
@@ -52,10 +51,10 @@ class ServerPollingService : BaseService() {
     }
 
     private fun setupRequest() {
-        val host = getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_SERVER_HOST,
-                PrefKeys.Server.Default.SERVER_HOST)
-        val port = getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_SERVER_PORT,
-                PrefKeys.Server.Default.SERVER_PORT)
+        val host = getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_HOST,
+                PrefKeys.Server.Default.HOST)
+        val port = getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_PORT,
+                PrefKeys.Server.Default.PORT)
         val url = "http://$host:$port/logs"
         synchronized(mRequestLock) {
             mRequest = Request.Builder()
@@ -66,7 +65,7 @@ class ServerPollingService : BaseService() {
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
         when (key) {
-            PrefKeys.Server.KEY_SERVER_HOST, PrefKeys.Server.KEY_SERVER_PORT -> {
+            PrefKeys.Server.KEY_HOST, PrefKeys.Server.KEY_PORT -> {
                 setupRequest()
             }
         }

@@ -18,4 +18,13 @@
             android:title="Port" />
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="Live Feed">
+
+        <EditTextPreference
+            android:defaultValue="8090"
+            android:dialogTitle="Port"
+            android:key="pref_key_live_feed_port"
+            android:persistent="true"
+            android:title="Port" />
+    </PreferenceCategory>
 </PreferenceScreen>
