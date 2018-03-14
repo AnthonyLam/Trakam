@@ -95,8 +95,7 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
             mProgressBar.visibility = View.VISIBLE
             mLiveFeedError.visibility = View.GONE
 
-            mSubscription.unsubscribe()
-            startLiveFeed()
+            stopLiveFeed()
         }
 
         if (!isLiveFeedEnabled()) {
@@ -115,9 +114,15 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
     }
 
     override fun onPause() {
-        mMjpegView.stopPlayback()
-        mSubscription.unsubscribe()
+        stopLiveFeed()
         super.onPause()
+    }
+
+    private fun stopLiveFeed() {
+        mMjpegView.stopPlayback()
+        if (::mSubscription.isInitialized) {
+            mSubscription.unsubscribe()
+        }
     }
 
     private fun startLiveFeed() {
