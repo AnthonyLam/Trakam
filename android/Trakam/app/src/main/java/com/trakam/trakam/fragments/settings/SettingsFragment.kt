@@ -31,11 +31,12 @@ class SettingsFragment : PreferenceFragment() {
                 PrefKeys.Server.Default.HOST)
         prefHost.setOnPreferenceChangeListener Callback@{ preference, newValue ->
             try {
-                val input = (newValue as String).trim()
+                var input = newValue as String
                 if (input.contains("\n")) {
                     activity!!.showToast("Invalid input")
                     return@Callback false
                 }
+                input = input.trim()
                 preference.summary = input
                 true
             } catch (e: Exception) {
@@ -49,11 +50,12 @@ class SettingsFragment : PreferenceFragment() {
                 PrefKeys.Server.Default.PORT)
         prefPort.setOnPreferenceChangeListener Callback@{ preference, newValue ->
             try {
-                val input = (newValue as String).trim()
+                var input = newValue as String
                 if (input.contains("\n")) {
                     activity!!.showToast("Invalid input")
                     return@Callback false
                 }
+                input = input.trim()
                 Integer.parseInt(input)
                 preference.summary = input
                 true
@@ -72,11 +74,12 @@ class SettingsFragment : PreferenceFragment() {
 
         prefPort.setOnPreferenceChangeListener Callback@{ preference, newValue ->
             try {
-                val input = (newValue as String).trim()
+                var input = newValue as String
                 if (input.contains("\n")) {
                     activity!!.showToast("Invalid input")
                     return@Callback false
                 }
+                input = input.trim()
                 Integer.parseInt(input)
                 preference.summary = input
                 true
