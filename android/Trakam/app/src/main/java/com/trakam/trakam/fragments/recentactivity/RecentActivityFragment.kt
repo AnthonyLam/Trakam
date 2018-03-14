@@ -8,6 +8,7 @@ import android.app.DialogFragment
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.opengl.Visibility
 import android.os.Bundle
 import android.provider.MediaStore
 import android.support.v4.content.FileProvider
@@ -18,6 +19,7 @@ import android.view.*
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.content.edit
 import androidx.net.toUri
 import com.github.niqdev.mjpeg.DisplayMode
 import com.github.niqdev.mjpeg.Mjpeg
@@ -41,6 +43,9 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
 
     companion object {
         val TAG = RecentActivityFragment::class.qualifiedName
+
+        private val KEY_LIVEFEED_VISIBLE = TAG + "_key_livefeed_visible"
+
         private const val REQ_CAMERA = 1
         private const val TEMP_FILE_NAME = "pic.jpg"
         private const val PICS_DIR = "pics"
@@ -56,6 +61,7 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
     private lateinit var mMjpegView: MjpegSurfaceView
     private lateinit var mMjpeg: Mjpeg
     private lateinit var mSubscription: Subscription
+    private lateinit var mLiveFeedContainer: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,6 +75,7 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
                               savedInstanceState: Bundle?): View {
         val view = inflateLayout(R.layout.frag_recent_activity)
 
+        mLiveFeedContainer = view.findViewById(R.id.liveFeedContainer)
         mMjpegView = view.findViewById(R.id.mjpegView)
 
         mNoActivityMessage = view.findViewById(R.id.noActivityMessage)
@@ -89,7 +96,11 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
             mLiveFeedError.visibility = View.GONE
 
             mSubscription.unsubscribe()
-            startStreaming()
+            startLiveFeed()
+        }
+
+        if (!isLiveFeedEnabled()) {
+            mLiveFeedContainer.visibility = View.GONE
         }
 
         return view
@@ -97,7 +108,10 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
 
     override fun onResume() {
         super.onResume()
-        startStreaming()
+
+        if (isLiveFeedEnabled()) {
+            startLiveFeed()
+        }
     }
 
     override fun onPause() {
@@ -106,7 +120,7 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
         super.onPause()
     }
 
-    private fun startStreaming() {
+    private fun startLiveFeed() {
         val port = activity!!.getDefaultSharedPreferences()
                 .getString(PrefKeys.LiveFeed.KEY_PORT, PrefKeys.LiveFeed.Default.PORT)
         mSubscription = mMjpeg.open(STREAM_URL.format(port))
@@ -127,10 +141,39 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
         super.onCreateOptionsMenu(menu, inflater)
     }
 
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        super.onPrepareOptionsMenu(menu)
+
+        val liveFeedToggle = menu.findItem(R.id.action_toggle_livefeed)
+        liveFeedToggle.isChecked = isLiveFeedEnabled()
+    }
+
+    private fun isLiveFeedEnabled() = activity!!.getDefaultSharedPreferences()
+            .getBoolean(KEY_LIVEFEED_VISIBLE, true)
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_add_person -> {
                 startCamera()
+                true
+            }
+            R.id.action_toggle_livefeed -> {
+                val newChecked = !item.isChecked
+                item.isChecked = newChecked
+
+                if (newChecked) {
+                    mLiveFeedContainer.visibility = View.VISIBLE
+                    mProgressBar.visibility = View.VISIBLE
+                    mLiveFeedError.visibility = View.GONE
+                    startLiveFeed()
+                } else {
+                    mMjpegView.stopPlayback()
+                    mLiveFeedContainer.visibility = View.GONE
+                }
+
+                activity!!.getDefaultSharedPreferences().edit {
+                    putBoolean(KEY_LIVEFEED_VISIBLE, newChecked)
+                }
                 true
             }
             R.id.action_settings -> {
