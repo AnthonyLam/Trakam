@@ -366,11 +366,13 @@ internal class EventPictureViewerDialogFragment : DialogFragment() {
             dialogBuilder.setPositiveButton("Whitelist", { _, _ ->
                 GetNameDialogFragment.newInstance(mLog, false)
                         .show(fragmentManager, GetNameDialogFragment.TAG)
+                dismiss()
             })
 
             dialogBuilder.setNegativeButton("Blacklist", { _, _ ->
                 GetNameDialogFragment.newInstance(mLog, true)
                         .show(fragmentManager, GetNameDialogFragment.TAG)
+                dismiss()
             })
         }
 
@@ -450,7 +452,12 @@ internal class SendToAzureProgressDialog : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val view = inflateLayout(R.layout.progress_dialog)
         val textView = view.findViewById<TextView>(R.id.message)
-        textView.text = "Processing..."
+
+        if (mMarkBlacklist) {
+            textView.text = "Adding to the blacklist..."
+        } else {
+            textView.text = "Adding to the whitelist..."
+        }
 
         isCancelable = false
         return AlertDialog.Builder(activity!!)
@@ -546,12 +553,12 @@ internal class SendToAzureProgressDialog : DialogFragment() {
 
             val (success, errMsg) = result
             if (success) {
-                frag.activity!!.showToast("Sent!")
+                frag.activity!!.showToast("Success")
             } else {
                 if (errMsg.isNotEmpty()) {
                     frag.activity!!.showToast(errMsg)
                 } else {
-                    frag.activity!!.showToast("Send failed!")
+                    frag.activity!!.showToast("Fail")
                 }
             }
             frag.dismiss()
