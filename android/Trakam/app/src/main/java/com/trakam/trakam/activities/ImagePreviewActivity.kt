@@ -31,6 +31,8 @@ class ImagePreviewActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_image_preview)
+        enableNavigateUp()
+
         val imageView = findViewById<ImageView>(R.id.imageView)
         val fab = findViewById<FloatingActionButton>(R.id.sendFAB)
 
@@ -59,134 +61,134 @@ class ImagePreviewActivity : BaseActivity() {
 
         return bitmapOutput
     }
-}
 
-class GetNameDialogFragment : DialogFragment() {
-    companion object {
-        val TAG = GetNameDialogFragment::class.qualifiedName
+    class GetNameDialogFragment : DialogFragment() {
+        companion object {
+            val TAG = GetNameDialogFragment::class.qualifiedName
 
-        fun newInstance(bitmap: Bitmap): GetNameDialogFragment {
-            val frag = GetNameDialogFragment()
-            frag.mBitmap = bitmap
-            return frag
-        }
-    }
-
-    private lateinit var mBitmap: Bitmap
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val view = inflateLayout(R.layout.get_name_dialog)
-        val editText = view.findViewById<EditText>(R.id.editText)
-        isCancelable = false
-        return AlertDialog.Builder(activity!!)
-                .setTitle(getString(R.string.name))
-                .setView(view)
-                .setCancelable(false)
-                .setPositiveButton(android.R.string.ok, { _, _ ->
-                    val name = editText.text.toString()
-                    if (name.isEmpty()) {
-                        activity!!.showToast("Name is empty!")
-                    } else {
-                        SendDialogFragment.newInstance(mBitmap, name)
-                                .show(activity!!.fragmentManager, SendDialogFragment.TAG)
-                    }
-                    dismiss()
-                })
-                .setNegativeButton(android.R.string.cancel, { _, _ ->
-                    dismiss()
-                })
-                .create()
-    }
-}
-
-class SendDialogFragment : DialogFragment() {
-    companion object {
-        val TAG = SendDialogFragment::class.qualifiedName
-
-        fun newInstance(bitmap: Bitmap, name: String): SendDialogFragment {
-            val frag = SendDialogFragment()
-            frag.mBitmap = bitmap
-            frag.mName = name
-            return frag
-        }
-    }
-
-    private val mFaceServiceClient = FaceServiceRestClient(FaceAPI.SUB_KEY)
-
-    private lateinit var mBitmap: Bitmap
-    private lateinit var mName: String
-
-    private var mSendTask: SendTask? = null
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val view = inflateLayout(R.layout.progress_dialog)
-        val textView = view.findViewById<TextView>(R.id.message)
-        textView.text = getString(R.string.sending_photo)
-        isCancelable = false
-
-        return AlertDialog.Builder(activity!!)
-                .setView(view)
-                .setCancelable(false)
-                .create()
-    }
-
-    override fun onStart() {
-        super.onStart()
-
-        if (mSendTask == null) {
-            mSendTask = SendTask(this, mFaceServiceClient, mName, mBitmap)
-            mSendTask?.execute()
-        }
-    }
-
-    class SendTask(frag: SendDialogFragment,
-                   private val faceServiceClient: FaceServiceClient,
-                   private val name: String,
-                   private val bitmap: Bitmap) : AsyncTask<Any, Any, Pair<Boolean, String>>() {
-
-        private val mFragRef = WeakReference(frag)
-
-        override fun doInBackground(vararg params: Any): Pair<Boolean, String> {
-            try {
-                val result = faceServiceClient.createPerson(FaceAPI.PERSON_GROUP_ID,
-                        name, "")
-
-                val outputStream = ByteArrayOutputStream()
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-
-                val inputStream = ByteArrayInputStream(outputStream.toByteArray())
-
-                faceServiceClient.addPersonFace(FaceAPI.PERSON_GROUP_ID,
-                        result.personId, inputStream,
-                        "", null)
-                faceServiceClient.trainPersonGroup(FaceAPI.PERSON_GROUP_ID)
-                return Pair(true, "")
-            } catch (e: ClientException) {
-                return Pair(false, e.message ?: "")
-            } catch (e: IOException) {
-                return Pair(false, "")
+            fun newInstance(bitmap: Bitmap): GetNameDialogFragment {
+                val frag = GetNameDialogFragment()
+                frag.mBitmap = bitmap
+                return frag
             }
         }
 
-        override fun onPostExecute(result: Pair<Boolean, String>) {
-            val frag = mFragRef.get() ?: return
+        private lateinit var mBitmap: Bitmap
 
-            if (frag.activity == null) {
-                return
+        override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+            val view = inflateLayout(R.layout.get_name_dialog)
+            val editText = view.findViewById<EditText>(R.id.editText)
+            isCancelable = false
+            return AlertDialog.Builder(activity!!)
+                    .setTitle(getString(R.string.name))
+                    .setView(view)
+                    .setCancelable(false)
+                    .setPositiveButton(android.R.string.ok, { _, _ ->
+                        val name = editText.text.toString()
+                        if (name.isEmpty()) {
+                            activity!!.showToast("Name is empty!")
+                        } else {
+                            SendDialogFragment.newInstance(mBitmap, name)
+                                    .show(activity!!.fragmentManager, SendDialogFragment.TAG)
+                        }
+                        dismiss()
+                    })
+                    .setNegativeButton(android.R.string.cancel, { _, _ ->
+                        dismiss()
+                    })
+                    .create()
+        }
+    }
+
+    class SendDialogFragment : DialogFragment() {
+        companion object {
+            val TAG = SendDialogFragment::class.qualifiedName
+
+            fun newInstance(bitmap: Bitmap, name: String): SendDialogFragment {
+                val frag = SendDialogFragment()
+                frag.mBitmap = bitmap
+                frag.mName = name
+                return frag
             }
+        }
 
-            val (success, errMsg) = result
-            if (success) {
-                frag.activity!!.showToast("Sent!")
-                frag.activity!!.finish()
-            } else {
-                if (errMsg.isNotEmpty()) {
-                    frag.activity!!.showToast(errMsg)
-                } else {
-                    frag.activity!!.showToast("Send failed!")
+        private val mFaceServiceClient = FaceServiceRestClient(FaceAPI.SUB_KEY)
+
+        private lateinit var mBitmap: Bitmap
+        private lateinit var mName: String
+
+        private var mSendTask: SendTask? = null
+
+        override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+            val view = inflateLayout(R.layout.progress_dialog)
+            val textView = view.findViewById<TextView>(R.id.message)
+            textView.text = getString(R.string.sending_photo)
+            isCancelable = false
+
+            return AlertDialog.Builder(activity!!)
+                    .setView(view)
+                    .setCancelable(false)
+                    .create()
+        }
+
+        override fun onStart() {
+            super.onStart()
+
+            if (mSendTask == null) {
+                mSendTask = SendTask(this, mFaceServiceClient, mName, mBitmap)
+                mSendTask?.execute()
+            }
+        }
+
+        class SendTask(frag: SendDialogFragment,
+                       private val faceServiceClient: FaceServiceClient,
+                       private val name: String,
+                       private val bitmap: Bitmap) : AsyncTask<Any, Any, Pair<Boolean, String>>() {
+
+            private val mFragRef = WeakReference(frag)
+
+            override fun doInBackground(vararg params: Any): Pair<Boolean, String> {
+                try {
+                    val result = faceServiceClient.createPerson(FaceAPI.PERSON_GROUP_ID,
+                            name, "")
+
+                    val outputStream = ByteArrayOutputStream()
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+
+                    val inputStream = ByteArrayInputStream(outputStream.toByteArray())
+
+                    faceServiceClient.addPersonFace(FaceAPI.PERSON_GROUP_ID,
+                            result.personId, inputStream,
+                            "", null)
+                    faceServiceClient.trainPersonGroup(FaceAPI.PERSON_GROUP_ID)
+                    return Pair(true, "")
+                } catch (e: ClientException) {
+                    return Pair(false, e.message ?: "")
+                } catch (e: IOException) {
+                    return Pair(false, "")
                 }
             }
-            frag.dismiss()
+
+            override fun onPostExecute(result: Pair<Boolean, String>) {
+                val frag = mFragRef.get() ?: return
+
+                if (frag.activity == null) {
+                    return
+                }
+
+                val (success, errMsg) = result
+                if (success) {
+                    frag.activity!!.showToast("Sent!")
+                    frag.activity!!.finish()
+                } else {
+                    if (errMsg.isNotEmpty()) {
+                        frag.activity!!.showToast(errMsg)
+                    } else {
+                        frag.activity!!.showToast("Send failed!")
+                    }
+                }
+                frag.dismiss()
+            }
         }
     }
 }
