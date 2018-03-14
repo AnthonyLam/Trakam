@@ -49,7 +49,7 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
         private const val REQ_CAMERA = 1
         private const val TEMP_FILE_NAME = "pic.jpg"
         private const val PICS_DIR = "pics"
-        private const val STREAM_URL = "http://192.168.0.189:%s/?action=stream"
+        private const val STREAM_URL = "http://%s:%s/?action=stream"
     }
 
     private lateinit var mRecyclerViewAdapter: MyRecyclerViewAdapter
@@ -126,9 +126,11 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
     }
 
     private fun startLiveFeed() {
+        val host = activity!!.getDefaultSharedPreferences()
+                .getString(PrefKeys.Server.KEY_HOST, PrefKeys.Server.Default.HOST)
         val port = activity!!.getDefaultSharedPreferences()
                 .getString(PrefKeys.LiveFeed.KEY_PORT, PrefKeys.LiveFeed.Default.PORT)
-        mSubscription = mMjpeg.open(STREAM_URL.format(port))
+        mSubscription = mMjpeg.open(STREAM_URL.format(host, port))
                 .subscribe({
                     mMjpegView.setSource(it)
                     mMjpegView.setDisplayMode(DisplayMode.BEST_FIT)
