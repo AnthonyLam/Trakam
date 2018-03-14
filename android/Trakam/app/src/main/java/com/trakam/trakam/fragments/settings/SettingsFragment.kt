@@ -28,6 +28,11 @@ class SettingsFragment : PreferenceFragment() {
         val prefPort = findPreference(PrefKeys.LiveFeed.KEY_PORT)
         prefPort.summary = sharedPrefs.getString(PrefKeys.LiveFeed.KEY_PORT,
                 PrefKeys.LiveFeed.Default.PORT)
+
+        prefPort.setOnPreferenceChangeListener { preference, newValue ->
+            preference.summary = newValue as String
+            true
+        }
     }
 
     private fun setupCategoryServer() {
@@ -35,10 +40,18 @@ class SettingsFragment : PreferenceFragment() {
         val prefHost = findPreference(PrefKeys.Server.KEY_HOST)
         prefHost.summary = sharedPrefs.getString(PrefKeys.Server.KEY_HOST,
                 PrefKeys.Server.Default.HOST)
+        prefHost.setOnPreferenceChangeListener { preference, newValue ->
+            preference.summary = newValue as String
+            true
+        }
 
         val prefPort = findPreference(PrefKeys.Server.KEY_PORT)
         prefPort.summary = sharedPrefs.getString(PrefKeys.Server.KEY_PORT,
                 PrefKeys.Server.Default.PORT)
+        prefPort.setOnPreferenceChangeListener { preference, newValue ->
+            preference.summary = newValue as String
+            true
+        }
     }
 
 }
