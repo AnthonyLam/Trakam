@@ -26,7 +26,7 @@ class AzureDetect(threading.Thread):
         fileout = TestPhoto.detect(self.img)
         for detection in fileout:
             uuid = detection.split(sep=',')[0]
-            copyfile(self.img,"{}/{}.jpg".format(IMG_DIR, uuid))
+            copyfile("/var/detect/file.jpg","{}/{}.jpg".format(IMG_DIR, uuid))
         with open(LOG_FILE, "a") as f:
             for o in fileout:
                 f.write(o + "\n")
@@ -47,16 +47,20 @@ while(True):
         sizeI = struct.unpack('>i', size)[0]
         print("Payload size: %d", sizeI)
      
-        b = bytes(get_chars(sizeI))
-        file_name = "{}{}.jpg".format(IMG_TMP, count)
-        if count >= 100:
-            count = 0
-        with open(file_name, "wb") as f:
-            f.write(b)
-        count += 1
-        if(code == 11):
-            t = AzureDetect(file_name)
-            t.start()
+        try:
+            b = bytes(get_chars(sizeI))
+            file_name = "{}{}.jpg".format(IMG_TMP, count)
+            if count >= 100:
+                count = 0
+            with open(file_name, "wb") as f:
+                f.write(b)
+            count += 1
+            if(code == 11):
+                t = AzureDetect(file_name)
+                t.start()
+        except Exception as e:
+            print("Exception Thrown: ", e)
+
     time.sleep(0.1)
      
 wiringpi.serialFlush(serial)

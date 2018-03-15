@@ -1,4 +1,5 @@
 import cognitive_face as CF
+import sys
 import os
 
 KEY = os.environ.get("KEY")
