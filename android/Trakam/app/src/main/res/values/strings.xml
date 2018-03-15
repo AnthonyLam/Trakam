@@ -10,4 +10,6 @@
     <string name="settings_activity_label">Settings</string>
     <string name="settings">Settings</string>
     <string name="live_feed_error">Live feed error</string>
+    <string name="unknown_person">Unknown person</string>
+    <string name="live_feed">Live feed</string>
 </resources>

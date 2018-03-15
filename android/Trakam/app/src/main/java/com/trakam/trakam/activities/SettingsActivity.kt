@@ -10,6 +10,7 @@ class SettingsActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
+        enableNavigateUp()
 
         if (savedInstanceState == null) {
             fragmentManager.replace(R.id.content_frame, SettingsFragment(), SettingsFragment.TAG)

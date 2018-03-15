@@ -7,6 +7,8 @@ import android.app.Dialog
 import android.app.DialogFragment
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.opengl.Visibility
 import android.os.Bundle
 import android.provider.MediaStore
 import android.support.v4.content.FileProvider
@@ -17,6 +19,7 @@ import android.view.*
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.content.edit
 import androidx.net.toUri
 import com.github.niqdev.mjpeg.DisplayMode
 import com.github.niqdev.mjpeg.Mjpeg
@@ -25,11 +28,13 @@ import com.squareup.picasso.Picasso
 import com.trakam.trakam.R
 import com.trakam.trakam.activities.ImagePreviewActivity
 import com.trakam.trakam.activities.SettingsActivity
+import com.trakam.trakam.activities.UnknownPersonActivity
 import com.trakam.trakam.data.Log
 import com.trakam.trakam.fragments.base.BaseFragment
 import com.trakam.trakam.services.OnLogEventListener
 import com.trakam.trakam.services.ServerPollingService
 import com.trakam.trakam.util.*
+import rx.Subscription
 import java.io.File
 import java.io.IOException
 import java.text.DateFormat
@@ -38,10 +43,13 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
 
     companion object {
         val TAG = RecentActivityFragment::class.qualifiedName
+
+        private val KEY_LIVEFEED_VISIBLE = TAG + "_key_livefeed_visible"
+
         private const val REQ_CAMERA = 1
         private const val TEMP_FILE_NAME = "pic.jpg"
         private const val PICS_DIR = "pics"
-        private const val STREAM_URL = "http://192.168.0.189:8090/?action=stream"
+        private const val STREAM_URL = "http://%s:%s/?action=stream"
     }
 
     private lateinit var mRecyclerViewAdapter: MyRecyclerViewAdapter
@@ -52,6 +60,8 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
     private lateinit var mLiveFeedError: TextView
     private lateinit var mMjpegView: MjpegSurfaceView
     private lateinit var mMjpeg: Mjpeg
+    private lateinit var mSubscription: Subscription
+    private lateinit var mLiveFeedContainer: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,6 +75,7 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
                               savedInstanceState: Bundle?): View {
         val view = inflateLayout(R.layout.frag_recent_activity)
 
+        mLiveFeedContainer = view.findViewById(R.id.liveFeedContainer)
         mMjpegView = view.findViewById(R.id.mjpegView)
 
         mNoActivityMessage = view.findViewById(R.id.noActivityMessage)
@@ -84,7 +95,11 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
             mProgressBar.visibility = View.VISIBLE
             mLiveFeedError.visibility = View.GONE
 
-            startStreaming()
+            stopLiveFeed()
+        }
+
+        if (!isLiveFeedEnabled()) {
+            mLiveFeedContainer.visibility = View.GONE
         }
 
         return view
@@ -92,11 +107,30 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
 
     override fun onResume() {
         super.onResume()
-        startStreaming()
+
+        if (isLiveFeedEnabled()) {
+            startLiveFeed()
+        }
     }
 
-    private fun startStreaming() {
-        mMjpeg.open(STREAM_URL)
+    override fun onPause() {
+        stopLiveFeed()
+        super.onPause()
+    }
+
+    private fun stopLiveFeed() {
+        mMjpegView.stopPlayback()
+        if (::mSubscription.isInitialized) {
+            mSubscription.unsubscribe()
+        }
+    }
+
+    private fun startLiveFeed() {
+        val host = activity!!.getDefaultSharedPreferences()
+                .getString(PrefKeys.Server.KEY_HOST, PrefKeys.Server.Default.HOST)
+        val port = activity!!.getDefaultSharedPreferences()
+                .getString(PrefKeys.LiveFeed.KEY_PORT, PrefKeys.LiveFeed.Default.PORT)
+        mSubscription = mMjpeg.open(STREAM_URL.format(host, port))
                 .subscribe({
                     mMjpegView.setSource(it)
                     mMjpegView.setDisplayMode(DisplayMode.BEST_FIT)
@@ -114,10 +148,39 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
         super.onCreateOptionsMenu(menu, inflater)
     }
 
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        super.onPrepareOptionsMenu(menu)
+
+        val liveFeedToggle = menu.findItem(R.id.action_toggle_livefeed)
+        liveFeedToggle.isChecked = isLiveFeedEnabled()
+    }
+
+    private fun isLiveFeedEnabled() = activity!!.getDefaultSharedPreferences()
+            .getBoolean(KEY_LIVEFEED_VISIBLE, true)
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_add_person -> {
                 startCamera()
+                true
+            }
+            R.id.action_toggle_livefeed -> {
+                val newChecked = !item.isChecked
+                item.isChecked = newChecked
+
+                if (newChecked) {
+                    mLiveFeedContainer.visibility = View.VISIBLE
+                    mProgressBar.visibility = View.VISIBLE
+                    mLiveFeedError.visibility = View.GONE
+                    startLiveFeed()
+                } else {
+                    mMjpegView.stopPlayback()
+                    mLiveFeedContainer.visibility = View.GONE
+                }
+
+                activity!!.getDefaultSharedPreferences().edit {
+                    putBoolean(KEY_LIVEFEED_VISIBLE, newChecked)
+                }
                 true
             }
             R.id.action_settings -> {
@@ -176,10 +239,6 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-
     override fun onStop() {
         getServerPollingService()?.setOnLogEventListener(null)
         super.onStop()
@@ -190,15 +249,15 @@ class RecentActivityFragment : BaseFragment(), OnLogEventListener, View.OnClickL
             R.id.recent_activity_list_root -> {
                 val pos = mLinearLayoutManager.getPosition(v)
                 if (pos != RecyclerView.NO_POSITION) {
-                    val host = activity!!.getDefaultSharedPreferences()
-                            .getString(PrefKeys.Server.KEY_SERVER_HOST,
-                                    PrefKeys.Server.Default.SERVER_HOST)
-                    val port = activity!!.getDefaultSharedPreferences()
-                            .getString(PrefKeys.Server.KEY_SERVER_PORT,
-                                    PrefKeys.Server.Default.SERVER_PORT)
-                    val url = "http://$host:$port/%s.jpg".format(mRecyclerViewAdapter[pos].log.uuid)
-                    EventPictureViewerDialogFragment.newInstance(url)
-                            .show(fragmentManager, EventPictureViewerDialogFragment.TAG)
+                    val log = mRecyclerViewAdapter[pos].log
+                    if (log.firstName == "Unknown person") {
+                        val intent = Intent(activity!!, UnknownPersonActivity::class.java)
+                        intent.putExtra(UnknownPersonActivity.EXTRA_UUID, log.uuid)
+                        startActivity(intent)
+                    } else {
+                        EventPictureViewerDialogFragment.newInstance(mRecyclerViewAdapter[pos].log)
+                                .show(fragmentManager, EventPictureViewerDialogFragment.TAG)
+                    }
                 }
             }
         }
@@ -245,13 +304,18 @@ private class MyRecyclerViewAdapter(private val context: Context,
             .build()
 
     private val mUrl: String
+    private val mRegularTextColor: Int
+    private val mBlackListTextColor: Int
 
     init {
-        val host = context.getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_SERVER_HOST,
-                PrefKeys.Server.Default.SERVER_HOST)
-        val port = context.getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_SERVER_PORT,
-                PrefKeys.Server.Default.SERVER_PORT)
+        val host = context.getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_HOST,
+                PrefKeys.Server.Default.HOST)
+        val port = context.getDefaultSharedPreferences().getString(PrefKeys.Server.KEY_PORT,
+                PrefKeys.Server.Default.PORT)
         mUrl = "http://$host:$port/%s.jpg"
+
+        mRegularTextColor = context.getAttrColor(R.attr.primary_text_color)
+        mBlackListTextColor = Color.parseColor("#C2185B")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -280,6 +344,13 @@ private class MyRecyclerViewAdapter(private val context: Context,
         } else {
             holder.name.text = listItem.log.firstName
         }
+
+        if (listItem.log.blacklisted) {
+            holder.name.setTextColor(mBlackListTextColor)
+        } else {
+            holder.name.setTextColor(mRegularTextColor)
+        }
+
         holder.timeStamp.text = DateFormat.getDateTimeInstance().format(listItem.log.timestamp)
 
         Picasso.with(context)
@@ -304,23 +375,32 @@ private class MyRecyclerViewAdapter(private val context: Context,
 internal class EventPictureViewerDialogFragment : DialogFragment() {
     companion object {
         val TAG = EventPictureViewerDialogFragment::class.qualifiedName
-        private val KEY_URL = TAG + "_key_url"
 
-        fun newInstance(url: String): EventPictureViewerDialogFragment {
-            val args = Bundle()
-            args.putString(KEY_URL, url)
-
+        fun newInstance(log: Log): EventPictureViewerDialogFragment {
             val frag = EventPictureViewerDialogFragment()
-            frag.arguments = args
+            frag.mLog = log
             return frag
         }
+    }
+
+    private lateinit var mLog: Log
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        retainInstance = true
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val view = inflateLayout(R.layout.event_picture_viewer_dialog)
         val imageView = view.findViewById<ImageView>(R.id.imageView)
 
-        val url = arguments!!.getString(KEY_URL)
+        val host = activity!!.getDefaultSharedPreferences()
+                .getString(PrefKeys.Server.KEY_HOST,
+                        PrefKeys.Server.Default.HOST)
+        val port = activity!!.getDefaultSharedPreferences()
+                .getString(PrefKeys.Server.KEY_PORT,
+                        PrefKeys.Server.Default.PORT)
+        val url = "http://$host:$port/%s.jpg".format(mLog.uuid)
         Picasso.with(activity!!)
                 .load(url)
                 .fit()

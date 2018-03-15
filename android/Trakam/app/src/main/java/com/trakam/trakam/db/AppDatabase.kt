@@ -3,36 +3,27 @@ package com.trakam.trakam.db
 import android.arch.persistence.room.*
 import android.content.Context
 
-@Entity(tableName = "people")
+@Entity(tableName = "blacklist")
 data class Person(
-        @PrimaryKey
-        var uuid: String,
+        @PrimaryKey(autoGenerate = true)
+        var id: Int = 0,
 
         @ColumnInfo(name = "first_name")
         var firstName: String,
 
         @ColumnInfo(name = "last_name")
-        var lastName: String,
-
-        @ColumnInfo(name = "blacklisted")
-        var blackListed: Int
+        var lastName: String
 )
 
 @Dao
 interface PeopleDao {
-    @Query("SELECT * FROM people")
+    @Query("SELECT * FROM blacklist")
     fun getAll(): List<Person>
-
-    @Query("SELECT * FROM people WHERE blacklisted = 1")
-    fun getBlackList(): List<Person>
-
-    @Query("SELECT * FROM people WHERE blacklisted = 0")
-    fun getWhiteList(): List<Person>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(vararg person: Person)
 
-    @Query("DELETE FROM people WHERE first_name = :firstName AND last_name = :lastName")
+    @Query("DELETE FROM blacklist WHERE first_name = :firstName AND last_name = :lastName")
     fun delete(firstName: String, lastName: String)
 }
 
@@ -48,7 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
             if (sInstance == null) {
                 synchronized(AppDatabase::class) {
                     sInstance = Room.databaseBuilder(context.applicationContext,
-                            AppDatabase::class.java, "main.db")
+                            AppDatabase::class.java, "blacklist.db")
                             .build()
                 }
             }
