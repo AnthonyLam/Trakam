@@ -35,33 +35,40 @@ def get_chars(size):
     for _ in range(size):
         yield wiringpi.serialGetchar(serial)
 
+def bytes_safe(chars):
+    try:
+        return bytes(chars)
+    except Exception as e:
+        print("Exception Thrown: ", e)
+        return bytes()
+
 count = 0
 while(True):
     wiringpi.serialPutchar(serial, 55)
-     
+
     if(wiringpi.serialDataAvail(serial) > 0):
         code = wiringpi.serialGetchar(serial)
         print("Recieved: %d", code)
-     
-        try:
-            size = bytes(get_chars(4))
-            sizeI = struct.unpack('>i', size)[0]
-            print("Payload size: %d", sizeI)
-     
-            b = bytes(get_chars(sizeI))
-            file_name = "{}{}.jpg".format(IMG_TMP, count)
-            if count >= 100:
-                count = 0
-            with open(file_name, "wb") as f:
-                f.write(b)
-            count += 1
-            if(code == 11):
-                t = AzureDetect(file_name)
-                t.start()
-        except Exception as e:
-            print("Exception Thrown: ", e)
+
+        # try:
+        size = bytes_safe(get_chars(4))
+        sizeI = struct.unpack('>i', size)[0]
+        print("Payload size: %d", sizeI)
+
+        b = bytes_safe(get_chars(sizeI))
+        file_name = "{}{}.jpg".format(IMG_TMP, count)
+        if count >= 100:
+            count = 0
+        with open(file_name, "wb") as f:
+            f.write(b)
+        count += 1
+        if(code == 11):
+            t = AzureDetect(file_name)
+            t.start()
+        # except Exception as e:
+        #     print("Exception Thrown: ", e)
 
     time.sleep(0.1)
-     
+
 wiringpi.serialFlush(serial)
 wiringpi.serialClose(serial)
