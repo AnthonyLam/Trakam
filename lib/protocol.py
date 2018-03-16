@@ -43,11 +43,11 @@ while(True):
         code = wiringpi.serialGetchar(serial)
         print("Recieved: %d", code)
      
-        size = bytes(get_chars(4))
-        sizeI = struct.unpack('>i', size)[0]
-        print("Payload size: %d", sizeI)
-     
         try:
+            size = bytes(get_chars(4))
+            sizeI = struct.unpack('>i', size)[0]
+            print("Payload size: %d", sizeI)
+     
             b = bytes(get_chars(sizeI))
             file_name = "{}{}.jpg".format(IMG_TMP, count)
             if count >= 100:
