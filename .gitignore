@@ -4,5 +4,4 @@ python.log
 lib/venv/
 lib/__pycache__/
 logs/
-*.jpg
 faceapi.key
