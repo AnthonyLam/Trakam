@@ -3,7 +3,7 @@
 - Professor Glenn Healey
 - Anthony Lam
 - Darshan Parajuli
-- Masa Maeda
+- Seung-Li Maeda
 
 ## Initial Plan
 The original idea was to create a camera tracking system that could track a given object through a combination of machine vision and machine learning. The concept involved realtime tracking to detect any given object.
@@ -47,6 +47,8 @@ Eventually, our team chose option 3 out of a desire to present a completed devic
 ![App Screenshot](./app_screenshot2.jpg)
 
 ## Structural Diagram
+
+<img src="./Final Report.svg">
 
 ## Summary
 If we were to describe our final design project with one word we would most likely describe it as: incomplete. With a little more time devoted to our pivoted idea and less time devoted to our initial ambitious task, we could have definitely implemented a more robust system with a solid feature set that worked well under any circumstance. As it is, our project has troubles with spotty Wi-Fi connections as well as occasional crashes due to overheating and too many detected faces being passed to the recognition subsystem.
