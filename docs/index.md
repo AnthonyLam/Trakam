@@ -37,11 +37,14 @@ Even though tracking one person’s face seemed trivial via face detection, the 
 ## Pivot - Security Camera
 
 Based on our experiences with implementing object/face tracking, our team was faced with the challenge of implementing our entire project in the three weeks before Winter Design Review. With this in mind, we had several options to present a reasonable project at our booth for review:
+
 1. A partial implementation of our initial design that worked sometimes.
 2. A reimplementation of our initial design that had only one function.
 3. Pivot our entire project to something that we knew we could do with increased functionality.
 
 Eventually, our team chose option 3 out of a desire to present a completed device. Instead of implementing our project using object detection and recognition combined with servos, we instead opted to implement facial recognition with a notification system, a steady livestream and a companion Android application.
+
+<img src="https://raw.githubusercontent.com/AnthonyLam/Trakam/master/docs/app_screenshot.jpg" width=200 />
 
 ## Structural Diagram
 
