@@ -14,7 +14,7 @@ Hardware in our initial implementation involved using a simple “dumb” camera
 
 Unfortunately, the cost of implementing on an FPGA + custom machine learning was too costly to implement time wise. With just 3 months of development time, there was no chance for a long running iteration. Instead, our team opted to forgo the typical Gantt chart process for a process more akin to typical software engineering paradigms such as SCRUM. This allowed us to iterate much faster but required spreading our three teammates thin in order to get more done in a shorter period of time.
 
-<img src="https://raw.githubusercontent.com/AnthonyLam/Trakam/master/docs/openmv_board.jpg" width=100 />
+![OpenMV Board](/docs/openmv_board2.jpg)
 
 Ultimately, our team decided on the OpenMV camera with built-in OpenCV methods and a Raspberry PI to do all of our processing with as little hardware as possible. For the initial implementation with tracking, our team used the Pololu Maestro servo controller to power a separate set of servos over UART.
 
@@ -44,7 +44,7 @@ Based on our experiences with implementing object/face tracking, our team was fa
 
 Eventually, our team chose option 3 out of a desire to present a completed device. Instead of implementing our project using object detection and recognition combined with servos, we instead opted to implement facial recognition with a notification system, a steady livestream and a companion Android application.
 
-<img src="https://raw.githubusercontent.com/AnthonyLam/Trakam/master/docs/app_screenshot.jpg" width=200 />
+![App Screenshot](/docs/app_screenshot2.jpg)
 
 ## Structural Diagram
 
