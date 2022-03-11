@@ -2,7 +2,7 @@ certifi==2018.1.18
 chardet==3.0.4
 cognitive-face==1.4.0
 idna==2.6
-Pillow==5.0.0
+Pillow==9.0.1
 pkg-resources==0.0.0
 requests==2.18.4
 urllib3==1.22
